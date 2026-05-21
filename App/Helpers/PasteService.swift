@@ -2,7 +2,7 @@ import AppKit
 
 enum PasteService {
     static func paste() {
-        let source = CGEventSource(stateID: .hidSystemState)
+        let source = CGEventSource(stateID: .privateState)
         let keyV = CGKeyCode(0x09)
 
         let keyDown = CGEvent(keyboardEventSource: source, virtualKey: keyV, keyDown: true)

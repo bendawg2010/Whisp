@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var cancellables = Set<AnyCancellable>()
 
     private var hudWindow: NSPanel?
+    private var settingsWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -25,6 +26,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         store.hotkeyChanged
             .sink { [weak self] in
                 self?.registerHotkey()
+            }
+            .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)
+            .sink { [weak self] notification in
+                guard let window = notification.object as? NSWindow else { return }
+                DispatchQueue.main.async {
+                    // Check if there are any other visible windows (ignoring panels/popovers)
+                    let normalWindows = NSApp.windows.filter { 
+                        $0.isVisible && !$0.className.contains("NSPanel") && !$0.className.contains("NSPopover") 
+                    }
+                    if normalWindows.isEmpty {
+                        NSApp.setActivationPolicy(.accessory)
+                    }
+                }
             }
             .store(in: &cancellables)
 
@@ -63,8 +79,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func registerHotkey() {
-        let mods = store.hotkeyModifiers.carbonModifiers
-        let code = store.hotkeyTriggerKey.keyCode
+        let mods = store.useCustomShortcut ? store.customModifiers : store.hotkeyModifiers.carbonModifiers
+        let code = store.useCustomShortcut ? store.customKeyCode : store.hotkeyTriggerKey.keyCode
         hotKey.register(modifiers: mods, keyCode: code) { [weak self] isPressed in
             guard let self = self else { return }
             if isPressed {
@@ -189,12 +205,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openSettings() {
-        NSApp.activate(ignoringOtherApps: true)
-        if #available(macOS 14.0, *) {
-            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        } else {
-            NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+        if settingsWindow == nil {
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 500, height: 600),
+                styleMask: [.titled, .closable, .miniaturizable],
+                backing: .buffered,
+                defer: false
+            )
+            window.title = "Whisp Settings"
+            window.contentViewController = NSHostingController(
+                rootView: SettingsView(store: store, updater: updater)
+            )
+            window.center()
+            window.setFrameAutosaveName("WhispSettingsWindow")
+            window.isReleasedWhenClosed = false
+            self.settingsWindow = window
         }
+
+        NSApp.setActivationPolicy(.regular)
+        settingsWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     @objc private func checkForUpdates() {

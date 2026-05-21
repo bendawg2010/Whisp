@@ -102,7 +102,7 @@
         timerId = setTimeout(() => {
           if (!isPlaying) return;
           if (keypress) {
-            keypress.textContent = "⌃⌥Space";
+            keypress.textContent = window.whispCurrentShortcut || "⌃⌥Space";
             keypress.classList.add('show');
             setTimeout(() => { keypress.classList.add('pressed'); }, 150);
           }

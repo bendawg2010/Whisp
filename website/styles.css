@@ -994,7 +994,11 @@ footer {
   font-weight: 500;
   color: white;
   white-space: nowrap;
-  overflow: hidden;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.web-hud-text::-webkit-scrollbar {
+  display: none;
 }
 
 .web-hud-shortcut {
@@ -1783,8 +1787,12 @@ footer {
   color: #fff;
   font-weight: 500;
   white-space: nowrap;
-  overflow: hidden;
+  overflow-x: auto;
+  scrollbar-width: none;
   margin-top: 1px;
+}
+.sim-hud-text::-webkit-scrollbar {
+  display: none;
 }
 
 .sim-hud-shortcut {
@@ -1940,5 +1948,56 @@ footer {
     margin-top: -125px;
     margin-bottom: -200px;
   }
+}
+
+/* Custom Shortcut recording styles */
+.record-shortcut-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--line);
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+.record-shortcut-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+.record-shortcut-btn.recording {
+  background: #FF4747;
+  border-color: #FF4747;
+  color: white;
+  animation: pulse-recording 1.5s infinite;
+}
+@keyframes pulse-recording {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+.reset-shortcut-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+.reset-shortcut-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+.shortcut-badge {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: bold;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  color: white;
+  font-size: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 

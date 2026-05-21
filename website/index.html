@@ -266,7 +266,7 @@
               </div>
             </div>
 
-            <div class="settings-row">
+            <div class="settings-row" id="webDefaultShortcutControls">
               <div class="settings-col">
                 <label for="webHotkeyModifiers">Shortcut Modifiers</label>
                 <select id="webHotkeyModifiers">
@@ -288,6 +288,27 @@
                   <option value="Grave Accent (`)">Grave Accent (`)</option>
                 </select>
               </div>
+            </div>
+
+            <!-- Custom Recorded Shortcut Controls -->
+            <div class="settings-row" id="webCustomShortcutControls" style="display: none; align-items: center; justify-content: space-between;">
+              <div class="settings-col" style="flex-direction: row; align-items: center; gap: 12px; width: 100%; justify-content: space-between;">
+                <label style="margin-bottom: 0;">Shortcut:</label>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span id="webCustomShortcutText" class="shortcut-badge">⌃⌥Space</span>
+                  <button id="webResetShortcutBtn" class="btn reset-shortcut-btn" style="padding: 4px 8px; font-size: 11px; height: auto; min-height: unset;">Reset</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Record Custom Shortcut Button -->
+            <div class="settings-row">
+              <button id="webRecordShortcutBtn" class="btn record-shortcut-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: -4px;">
+                <svg id="webRecordShortcutIcon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-3-3h2v2H5V8zm0 3h2v2H5v-2zm3 3h8v2H8v-2zm9-3h2v2h-2v-2zm0-3h2v2h-2V8z"/>
+                </svg>
+                <span id="webRecordShortcutBtnText">Record Custom Shortcut</span>
+              </button>
             </div>
 
             <div class="settings-row">

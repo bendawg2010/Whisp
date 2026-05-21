@@ -1,8 +1,10 @@
 import SwiftUI
+import Carbon
 
 struct ContentView: View {
     @ObservedObject var store: DictationStore
     let updater: UpdaterController
+    @State private var shortcutMonitor: Any? = nil
 
     private var statusColor: Color {
         if store.isRecording { return .red }
@@ -30,6 +32,9 @@ struct ContentView: View {
             )
         )
         .foregroundStyle(.white)
+        .onDisappear {
+            stopRecordingShortcut()
+        }
     }
 
     private var header: some View {
@@ -39,7 +44,7 @@ struct ContentView: View {
                     .fill(statusColor.opacity(0.16))
                     .frame(width: 48, height: 48)
                 if store.isRecording {
-                    WaveVisualizerView()
+                    WaveVisualizerView(store: store)
                 } else {
                     Image(systemName: "waveform.circle")
                         .font(.system(size: 29, weight: .semibold))
@@ -108,7 +113,7 @@ struct ContentView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     if store.isRecording && store.liveTranscript.isEmpty {
                         HStack(spacing: 8) {
-                            WaveVisualizerView()
+                            WaveVisualizerView(store: store)
                             Text("Start talking...")
                                 .font(.system(size: 15, weight: .medium, design: .rounded))
                                 .foregroundStyle(.white.opacity(0.45))
@@ -155,19 +160,58 @@ struct ContentView: View {
             }
             .pickerStyle(.menu)
 
-            Picker("Shortcut Modifiers", selection: $store.hotkeyModifiers) {
-                ForEach(HotkeyModifiersCombo.allCases) { combo in
-                    Text(combo.rawValue).tag(combo)
+            if store.useCustomShortcut {
+                HStack(spacing: 8) {
+                    Text("Shortcut:")
+                        .font(.body)
+                    Spacer()
+                    Text(store.customShortcutText)
+                        .font(.system(.body, design: .monospaced))
+                        .fontWeight(.bold)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.white.opacity(0.12))
+                        .cornerRadius(6)
+                    
+                    Button("Reset") {
+                        store.useCustomShortcut = false
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                 }
-            }
-            .pickerStyle(.menu)
+            } else {
+                VStack(alignment: .leading, spacing: 8) {
+                    Picker("Shortcut Modifiers", selection: $store.hotkeyModifiers) {
+                        ForEach(HotkeyModifiersCombo.allCases) { combo in
+                            Text(combo.rawValue).tag(combo)
+                        }
+                    }
+                    .pickerStyle(.menu)
 
-            Picker("Shortcut Key", selection: $store.hotkeyTriggerKey) {
-                ForEach(HotkeyTriggerKey.allCases) { key in
-                    Text(key.rawValue).tag(key)
+                    Picker("Shortcut Key", selection: $store.hotkeyTriggerKey) {
+                        ForEach(HotkeyTriggerKey.allCases) { key in
+                            Text(key.rawValue).tag(key)
+                        }
+                    }
+                    .pickerStyle(.menu)
                 }
             }
-            .pickerStyle(.menu)
+
+            Button(action: {
+                if store.isRecordingShortcut {
+                    stopRecordingShortcut()
+                } else {
+                    startRecordingShortcut()
+                }
+            }) {
+                HStack {
+                    Image(systemName: store.isRecordingShortcut ? "record.circle" : "keyboard")
+                    Text(store.isRecordingShortcut ? "Press key combination... (Esc to cancel)" : "Record Custom Shortcut")
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .tint(store.isRecordingShortcut ? .red : .accentColor)
 
             Picker("Recording Mode", selection: $store.hotkeyMode) {
                 ForEach(HotkeyMode.allCases) { mode in
@@ -282,9 +326,165 @@ struct ContentView: View {
         }
         return store.lastTranscript.isEmpty ? (store.hotkeyMode == .hold ? "Hold \(store.hotkeyDescription) to dictate." : "Press \(store.hotkeyDescription) to dictate.") : store.lastTranscript
     }
+
+    private func startRecordingShortcut() {
+        store.isRecordingShortcut = true
+        stopRecordingShortcut()
+        
+        shortcutMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { event in
+            // Escape to cancel
+            if event.type == .keyDown && event.keyCode == 53 { // Escape
+                stopRecordingShortcut()
+                return nil
+            }
+            
+            let flags = event.modifierFlags
+            var carbonMods: UInt32 = 0
+            var descParts: [String] = []
+            
+            if flags.contains(.control) {
+                carbonMods |= UInt32(0x1000) // controlKey
+                descParts.append("⌃")
+            }
+            if flags.contains(.option) {
+                carbonMods |= UInt32(0x0800) // optionKey
+                descParts.append("⌥")
+            }
+            if flags.contains(.command) {
+                carbonMods |= UInt32(0x0100) // cmdKey
+                descParts.append("⌘")
+            }
+            if flags.contains(.shift) {
+                carbonMods |= UInt32(0x0200) // shiftKey
+                descParts.append("⇧")
+            }
+            
+            if event.type == .keyDown {
+                let keyCode = UInt32(event.keyCode)
+                let keyStr = stringFromKeyCode(keyCode)
+                descParts.append(keyStr)
+                
+                store.customModifiers = carbonMods
+                store.customKeyCode = keyCode
+                store.customShortcutText = descParts.joined()
+                store.useCustomShortcut = true
+                
+                stopRecordingShortcut()
+                return nil // consume the event
+            }
+            
+            return event
+        }
+    }
+    
+    private func stopRecordingShortcut() {
+        store.isRecordingShortcut = false
+        if let monitor = shortcutMonitor {
+            NSEvent.removeMonitor(monitor)
+            shortcutMonitor = nil
+        }
+    }
+    
+    private func stringFromKeyCode(_ keyCode: UInt32) -> String {
+        switch keyCode {
+        case 36: return "Return"
+        case 48: return "Tab"
+        case 49: return "Space"
+        case 51: return "Delete"
+        case 53: return "Escape"
+        case 123: return "Left"
+        case 124: return "Right"
+        case 125: return "Down"
+        case 126: return "Up"
+        // Letters
+        case 0: return "A"
+        case 1: return "S"
+        case 2: return "D"
+        case 3: return "F"
+        case 4: return "H"
+        case 5: return "G"
+        case 6: return "Z"
+        case 7: return "X"
+        case 8: return "C"
+        case 9: return "V"
+        case 11: return "B"
+        case 12: return "Q"
+        case 13: return "W"
+        case 14: return "E"
+        case 15: return "R"
+        case 16: return "Y"
+        case 17: return "T"
+        case 31: return "O"
+        case 32: return "U"
+        case 34: return "I"
+        case 35: return "P"
+        case 37: return "L"
+        case 38: return "J"
+        case 40: return "K"
+        case 45: return "N"
+        case 46: return "M"
+        // Numbers
+        case 18: return "1"
+        case 19: return "2"
+        case 20: return "3"
+        case 21: return "4"
+        case 23: return "5"
+        case 22: return "6"
+        case 26: return "7"
+        case 28: return "8"
+        case 25: return "9"
+        case 29: return "0"
+        // Special keys
+        case 50: return "`"
+        default:
+            if let string = stringFromKeycodeTranslation(keyCode) {
+                return string.uppercased()
+            }
+            return "Key\(keyCode)"
+        }
+    }
+    
+    private func stringFromKeycodeTranslation(_ keyCode: UInt32) -> String? {
+        let maxStringLength = 16
+        var stringLength = 0
+        var unicodeString = [UniChar](repeating: 0, count: maxStringLength)
+        
+        guard let keyboardLayout = TISCopyCurrentKeyboardInputSource()?.takeRetainedValue() else {
+            return nil
+        }
+        
+        let layoutData = TISGetInputSourceProperty(keyboardLayout, kTISPropertyUnicodeKeyLayoutData)
+        guard let layoutDataRef = layoutData else {
+            return nil
+        }
+        
+        let layoutDataPtr = unsafeBitCast(layoutDataRef, to: CFData.self)
+        let rawLayoutData = CFDataGetBytePtr(layoutDataPtr)
+        let keyboardLayoutPtr = unsafeBitCast(rawLayoutData, to: UnsafePointer<UCKeyboardLayout>.self)
+        
+        var deadKeys: UInt32 = 0
+        let result = UCKeyTranslate(
+            keyboardLayoutPtr,
+            UInt16(keyCode),
+            UInt16(kUCKeyActionDown),
+            0,
+            UInt32(LMGetKbdType()),
+            UInt32(kUCKeyTranslateNoDeadKeysBit),
+            &deadKeys,
+            maxStringLength,
+            &stringLength,
+            &unicodeString
+        )
+        
+        if result == noErr && stringLength > 0 {
+            return String(utf16CodeUnits: unicodeString, count: stringLength)
+        }
+        return nil
+    }
 }
 
 struct WaveVisualizerView: View {
+    @ObservedObject var store: DictationStore
     @State private var phase: CGFloat = 0
 
     var body: some View {
@@ -311,7 +511,10 @@ struct WaveVisualizerView: View {
     private func getHeight(for index: Int) -> CGFloat {
         let base = sin(phase + CGFloat(index) * 0.8)
         let normalized = (base + 1.0) / 2.0 // 0 to 1
-        return 8 + normalized * 18
+        
+        let level = CGFloat(store.audioLevel)
+        let factor = 6 + level * 20 + normalized * (4 + level * 8)
+        return min(28, max(4, factor))
     }
 }
 

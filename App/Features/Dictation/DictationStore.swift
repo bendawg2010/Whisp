@@ -168,11 +168,41 @@ final class DictationStore: ObservableObject {
     @Published var showFloatingHUD: Bool {
         didSet { defaults.set(showFloatingHUD, forKey: Keys.showFloatingHUD) }
     }
+    @Published var useCustomShortcut: Bool {
+        didSet {
+            defaults.set(useCustomShortcut, forKey: Keys.useCustomShortcut)
+            hotkeyChanged.send()
+        }
+    }
+    @Published var customModifiers: UInt32 {
+        didSet {
+            defaults.set(customModifiers, forKey: Keys.customModifiers)
+            hotkeyChanged.send()
+        }
+    }
+    @Published var customKeyCode: UInt32 {
+        didSet {
+            defaults.set(customKeyCode, forKey: Keys.customKeyCode)
+            hotkeyChanged.send()
+        }
+    }
+    @Published var customShortcutText: String {
+        didSet {
+            defaults.set(customShortcutText, forKey: Keys.customShortcutText)
+            hotkeyChanged.send()
+        }
+    }
+    @Published var isRecordingShortcut: Bool = false
+    @Published var audioLevel: Float = 0.0
 
     let hotkeyChanged = PassthroughSubject<Void, Never>()
 
     var hotkeyDescription: String {
-        return hotkeyModifiers.shortModifierDescription + hotkeyTriggerKey.shortDescription
+        if useCustomShortcut {
+            return customShortcutText
+        } else {
+            return hotkeyModifiers.shortModifierDescription + hotkeyTriggerKey.shortDescription
+        }
     }
 
     var permissionSummary: String {
@@ -198,6 +228,10 @@ final class DictationStore: ObservableObject {
         static let hotkeyTriggerKey = "Whisp.hotkeyTriggerKey"
         static let hotkeyMode = "Whisp.hotkeyMode"
         static let showFloatingHUD = "Whisp.showFloatingHUD"
+        static let useCustomShortcut = "Whisp.useCustomShortcut"
+        static let customModifiers = "Whisp.customModifiers"
+        static let customKeyCode = "Whisp.customKeyCode"
+        static let customShortcutText = "Whisp.customShortcutText"
     }
 
     private let defaults = UserDefaults.standard
@@ -231,6 +265,10 @@ final class DictationStore: ObservableObject {
         hotkeyMode = HotkeyMode(rawValue: modeRaw) ?? .hold
         
         showFloatingHUD = defaults.object(forKey: Keys.showFloatingHUD) as? Bool ?? true
+        useCustomShortcut = defaults.object(forKey: Keys.useCustomShortcut) as? Bool ?? false
+        customModifiers = defaults.object(forKey: Keys.customModifiers) as? UInt32 ?? UInt32(0x1000 | 0x0800) // Control + Option
+        customKeyCode = defaults.object(forKey: Keys.customKeyCode) as? UInt32 ?? 49 // Space
+        customShortcutText = defaults.string(forKey: Keys.customShortcutText) ?? "⌃⌥Space"
     }
 
     func requestPermissions() {
@@ -306,8 +344,33 @@ final class DictationStore: ObservableObject {
         }
 
         inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             request.append(buffer)
+            
+            guard let channelData = buffer.floatChannelData else { return }
+            let channelCount = Int(buffer.format.channelCount)
+            let frameLength = Int(buffer.frameLength)
+            
+            var sum: Float = 0.0
+            var count = 0
+            for channel in 0..<channelCount {
+                let data = channelData[channel]
+                for frame in 0..<frameLength {
+                    let val = data[frame]
+                    sum += val * val
+                    count += 1
+                }
+            }
+            
+            let rms = count > 0 ? sqrt(sum / Float(count)) : 0.0
+            let db = rms > 0 ? 20 * log10(rms) : -160.0
+            let minDb: Float = -45.0
+            let maxDb: Float = -5.0
+            let level = max(0.0, min(1.0, (db - minDb) / (maxDb - minDb)))
+            
+            DispatchQueue.main.async {
+                self?.audioLevel = level
+            }
         }
 
         engine.prepare()
@@ -347,7 +410,7 @@ final class DictationStore: ObservableObject {
             self?.finishRecording(with: self?.liveTranscript ?? "")
         }
         finishWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.65, execute: workItem)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: workItem)
     }
 
     func cancelRecording() {
@@ -363,6 +426,7 @@ final class DictationStore: ObservableObject {
         isRecording = false
         isFinishing = false
         liveTranscript = ""
+        audioLevel = 0.0
     }
 
     func hotkeyReleased() {
@@ -370,7 +434,7 @@ final class DictationStore: ObservableObject {
         if let pending = pendingPasteText {
             pendingPasteText = nil
             if autoPaste {
-                let delay = pending.count > 500 ? 0.65 : (pending.count > 100 ? 0.4 : 0.18)
+                let delay = 0.15
                 DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                     PasteService.paste()
                 }
@@ -425,6 +489,7 @@ final class DictationStore: ObservableObject {
         audioEngine = nil
         isRecording = false
         isFinishing = false
+        audioLevel = 0.0
 
         let cleaned = clean(rawText)
         liveTranscript = cleaned
@@ -441,7 +506,7 @@ final class DictationStore: ObservableObject {
             if hotkeyMode == .hold && isHotkeyCurrentlyPressed {
                 pendingPasteText = cleaned
             } else {
-                let delay = cleaned.count > 500 ? 0.65 : (cleaned.count > 100 ? 0.4 : 0.18)
+                let delay = 0.15
                 DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                     PasteService.paste()
                 }

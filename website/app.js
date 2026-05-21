@@ -79,6 +79,15 @@
   const hotkeyModifiersSelect = document.getElementById('webHotkeyModifiers');
   const hotkeyTriggerKeySelect = document.getElementById('webHotkeyTriggerKey');
   const hotkeyModeSelect = document.getElementById('webHotkeyMode');
+
+  // Custom Shortcut Controls
+  const webDefaultShortcutControls = document.getElementById('webDefaultShortcutControls');
+  const webCustomShortcutControls = document.getElementById('webCustomShortcutControls');
+  const webCustomShortcutText = document.getElementById('webCustomShortcutText');
+  const webResetShortcutBtn = document.getElementById('webResetShortcutBtn');
+  const webRecordShortcutBtn = document.getElementById('webRecordShortcutBtn');
+  const webRecordShortcutBtnText = document.getElementById('webRecordShortcutBtnText');
+  const webRecordShortcutIcon = document.getElementById('webRecordShortcutIcon');
   
   // Buttons
   const recordBtn = document.getElementById('webRecordBtn');
@@ -98,6 +107,11 @@
   let isRecording = false;
   let rawTranscript = '';
   let finalFormattedText = '';
+  
+  // Custom Shortcut State
+  let useCustomShortcut = false;
+  let customShortcutObj = null;
+  let isRecordingShortcut = false;
   
   // Web Audio Contexts
   let audioContext = null;
@@ -531,7 +545,58 @@
 
   let isHotkeyHeld = false;
 
+  function getShortcutString(shortcutObj) {
+    if (!shortcutObj) return "";
+    let parts = [];
+    if (shortcutObj.ctrl) parts.push("⌃");
+    if (shortcutObj.alt) parts.push("⌥");
+    if (shortcutObj.shift) parts.push("⇧");
+    if (shortcutObj.cmd) parts.push("⌘");
+    
+    let keyDisplay = shortcutObj.key;
+    if (!keyDisplay) return ""; // Only modifiers held
+    
+    if (keyDisplay === ' ') keyDisplay = 'Space';
+    else if (keyDisplay === 'Enter') keyDisplay = 'Return';
+    else if (keyDisplay === 'Tab') keyDisplay = 'Tab';
+    else if (keyDisplay === 'Escape') keyDisplay = 'Escape';
+    else if (keyDisplay.length === 1) {
+      keyDisplay = keyDisplay.toUpperCase();
+    }
+    
+    parts.push(keyDisplay);
+    return parts.join("");
+  }
+
   function matchesShortcut(e) {
+    if (useCustomShortcut) {
+      if (!customShortcutObj) return false;
+      const ctrlMatch = !!e.ctrlKey === !!customShortcutObj.ctrl;
+      const altMatch = !!e.altKey === !!customShortcutObj.alt;
+      const shiftMatch = !!e.shiftKey === !!customShortcutObj.shift;
+      const cmdMatch = !!e.metaKey === !!customShortcutObj.cmd;
+
+      if (!ctrlMatch || !altMatch || !shiftMatch || !cmdMatch) return false;
+
+      let keyMatch = false;
+      const keyVal = customShortcutObj.key.toLowerCase();
+      const eventKey = e.key.toLowerCase();
+      const eventCode = e.code.toLowerCase();
+
+      if (keyVal === 'space') {
+        keyMatch = eventCode === 'space' || eventKey === ' ';
+      } else if (keyVal === 'enter' || keyVal === 'return') {
+        keyMatch = eventKey === 'enter' || eventCode === 'enter';
+      } else if (keyVal === 'tab') {
+        keyMatch = eventKey === 'tab';
+      } else if (keyVal === 'escape') {
+        keyMatch = eventKey === 'escape';
+      } else {
+        keyMatch = eventKey === keyVal || eventCode === 'key' + keyVal || eventCode === keyVal;
+      }
+      return keyMatch;
+    }
+
     if (!hotkeyModifiersSelect || !hotkeyTriggerKeySelect) return false;
     const mods = hotkeyModifiersSelect.value;
     const keyVal = hotkeyTriggerKeySelect.value;
@@ -573,6 +638,9 @@
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') {
       return;
     }
+    if (isRecordingShortcut) {
+      return;
+    }
     if (matchesShortcut(e)) {
       e.preventDefault();
       
@@ -594,23 +662,45 @@
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') {
       return;
     }
-    if (!hotkeyTriggerKeySelect) return;
-    const keyVal = hotkeyTriggerKeySelect.value;
+    if (isRecordingShortcut) {
+      return;
+    }
+    
     let keyMatch = false;
-    if (keyVal === 'Space') {
-      keyMatch = e.code === 'Space' || e.key === ' ';
-    } else if (keyVal === 'Return') {
-      keyMatch = e.key === 'Enter';
-    } else if (keyVal === 'Tab') {
-      keyMatch = e.key === 'Tab';
-    } else if (keyVal === 'Escape') {
-      keyMatch = e.key === 'Escape';
-    } else if (keyVal === 'D') {
-      keyMatch = e.key.toLowerCase() === 'd';
-    } else if (keyVal === 'R') {
-      keyMatch = e.key.toLowerCase() === 'r';
-    } else if (keyVal === 'Grave Accent (`)') {
-      keyMatch = e.key === '`' || e.code === 'Backquote';
+    if (useCustomShortcut) {
+      if (!customShortcutObj) return;
+      const keyVal = customShortcutObj.key.toLowerCase();
+      const eventKey = e.key.toLowerCase();
+      const eventCode = e.code.toLowerCase();
+      if (keyVal === 'space') {
+        keyMatch = eventCode === 'space' || eventKey === ' ';
+      } else if (keyVal === 'enter' || keyVal === 'return') {
+        keyMatch = eventKey === 'enter' || eventCode === 'enter';
+      } else if (keyVal === 'tab') {
+        keyMatch = eventKey === 'tab';
+      } else if (keyVal === 'escape') {
+        keyMatch = eventKey === 'escape';
+      } else {
+        keyMatch = eventKey === keyVal || eventCode === 'key' + keyVal || eventCode === keyVal;
+      }
+    } else {
+      if (!hotkeyTriggerKeySelect) return;
+      const keyVal = hotkeyTriggerKeySelect.value;
+      if (keyVal === 'Space') {
+        keyMatch = e.code === 'Space' || e.key === ' ';
+      } else if (keyVal === 'Return') {
+        keyMatch = e.key === 'Enter';
+      } else if (keyVal === 'Tab') {
+        keyMatch = e.key === 'Tab';
+      } else if (keyVal === 'Escape') {
+        keyMatch = e.key === 'Escape';
+      } else if (keyVal === 'D') {
+        keyMatch = e.key.toLowerCase() === 'd';
+      } else if (keyVal === 'R') {
+        keyMatch = e.key.toLowerCase() === 'r';
+      } else if (keyVal === 'Grave Accent (`)') {
+        keyMatch = e.key === '`' || e.code === 'Backquote';
+      }
     }
 
     if (keyMatch) {
@@ -622,30 +712,52 @@
     }
   });
 
-  function updateShortcutAndMode() {
-    if (!hotkeyModifiersSelect || !hotkeyTriggerKeySelect || !hotkeyModeSelect) return;
-    const mods = hotkeyModifiersSelect.value;
-    const keyVal = hotkeyTriggerKeySelect.value;
-    const mode = hotkeyModeSelect.value;
+  function updateShortcutUI() {
+    let shortcutText = '';
+    
+    if (useCustomShortcut && customShortcutObj) {
+      shortcutText = getShortcutString(customShortcutObj);
+      if (webDefaultShortcutControls) webDefaultShortcutControls.style.display = 'none';
+      if (webCustomShortcutControls) webCustomShortcutControls.style.display = 'flex';
+      if (webCustomShortcutText) webCustomShortcutText.textContent = shortcutText;
+    } else {
+      if (webDefaultShortcutControls) webDefaultShortcutControls.style.display = 'flex';
+      if (webCustomShortcutControls) webCustomShortcutControls.style.display = 'none';
+      
+      if (!hotkeyModifiersSelect || !hotkeyTriggerKeySelect) return;
+      const mods = hotkeyModifiersSelect.value;
+      const keyVal = hotkeyTriggerKeySelect.value;
 
-    let modDesc = '⌃⌥';
-    if (mods === 'controlOption') modDesc = '⌃⌥';
-    else if (mods === 'controlCommand') modDesc = '⌃⌘';
-    else if (mods === 'optionCommand') modDesc = '⌥⌘';
-    else if (mods === 'controlShift') modDesc = '⌃⇧';
+      let modDesc = '⌃⌥';
+      if (mods === 'controlOption') modDesc = '⌃⌥';
+      else if (mods === 'controlCommand') modDesc = '⌃⌘';
+      else if (mods === 'optionCommand') modDesc = '⌥⌘';
+      else if (mods === 'controlShift') modDesc = '⌃⇧';
 
-    let keyDesc = 'Space';
-    if (keyVal === 'Space') keyDesc = 'Space';
-    else if (keyVal === 'Return') keyDesc = '↩';
-    else if (keyVal === 'Tab') keyDesc = '⇥';
-    else if (keyVal === 'Escape') keyDesc = '⎋';
-    else if (keyVal === 'D') keyDesc = 'D';
-    else if (keyVal === 'R') keyDesc = 'R';
-    else if (keyVal === 'Grave Accent (`)') keyDesc = '`';
+      let keyDesc = 'Space';
+      if (keyVal === 'Space') keyDesc = 'Space';
+      else if (keyVal === 'Return') keyDesc = '↩';
+      else if (keyVal === 'Tab') keyDesc = '⇥';
+      else if (keyVal === 'Escape') keyDesc = '⎋';
+      else if (keyVal === 'D') keyDesc = 'D';
+      else if (keyVal === 'R') keyDesc = 'R';
+      else if (keyVal === 'Grave Accent (`)') keyDesc = '`';
 
-    const shortcutText = modDesc + keyDesc;
+      shortcutText = modDesc + keyDesc;
+    }
+
     if (shortcutLabel) shortcutLabel.textContent = shortcutText;
+    
+    // Update all elements with shortcut text
+    document.querySelectorAll('.sim-hud-shortcut').forEach(el => el.textContent = shortcutText);
+    document.querySelectorAll('.web-hud-shortcut').forEach(el => el.textContent = shortcutText);
+    const simKeypress = document.getElementById('simKeypress');
+    if (simKeypress) simKeypress.textContent = shortcutText;
+    
+    // Share with trailer.js
+    window.whispCurrentShortcut = shortcutText;
 
+    const mode = hotkeyModeSelect ? hotkeyModeSelect.value : 'hold';
     if (!isRecording && (!finalFormattedText || transcriptText.textContent.startsWith("Press the button below or hit") || transcriptText.textContent.startsWith("Hold"))) {
       if (mode === 'hold') {
         transcriptText.textContent = `Hold ${shortcutText} to try Whisp right here in your browser.`;
@@ -657,9 +769,96 @@
     saveLocalSettings();
   }
 
-  if (hotkeyModifiersSelect) hotkeyModifiersSelect.addEventListener('change', updateShortcutAndMode);
-  if (hotkeyTriggerKeySelect) hotkeyTriggerKeySelect.addEventListener('change', updateShortcutAndMode);
-  if (hotkeyModeSelect) hotkeyModeSelect.addEventListener('change', updateShortcutAndMode);
+  // Bind custom hotkey recorder handlers
+  function handleShortcutRecordingKeydown(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const key = e.key;
+    const isModifierOnly = ['control', 'alt', 'option', 'shift', 'meta', 'command'].includes(key.toLowerCase());
+    
+    let tempObj = {
+      ctrl: e.ctrlKey,
+      alt: e.altKey,
+      shift: e.shiftKey,
+      cmd: e.metaKey,
+      key: isModifierOnly ? '' : key
+    };
+    
+    let currentStr = getShortcutString(tempObj);
+    if (!currentStr) {
+      let mods = [];
+      if (e.ctrlKey) mods.push("⌃");
+      if (e.altKey) mods.push("⌥");
+      if (e.shiftKey) mods.push("⇧");
+      if (e.metaKey) mods.push("⌘");
+      if (mods.length > 0) {
+        webRecordShortcutBtnText.textContent = 'Hold modifiers: ' + mods.join("") + "...";
+      } else {
+        webRecordShortcutBtnText.textContent = 'Press any shortcut...';
+      }
+    } else {
+      customShortcutObj = tempObj;
+      useCustomShortcut = true;
+      stopRecordingShortcut();
+      updateShortcutUI();
+      showToast("Custom shortcut registered!");
+    }
+  }
+  
+  function handleShortcutRecordingKeyup(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  function startRecordingShortcut() {
+    isRecordingShortcut = true;
+    if (webRecordShortcutBtn) {
+      webRecordShortcutBtn.classList.add('recording');
+    }
+    if (webRecordShortcutBtnText) {
+      webRecordShortcutBtnText.textContent = 'Press key combination...';
+    }
+    window.addEventListener('keydown', handleShortcutRecordingKeydown, true);
+    window.addEventListener('keyup', handleShortcutRecordingKeyup, true);
+  }
+  
+  function stopRecordingShortcut() {
+    isRecordingShortcut = false;
+    if (webRecordShortcutBtn) {
+      webRecordShortcutBtn.classList.remove('recording');
+    }
+    if (webRecordShortcutBtnText) {
+      webRecordShortcutBtnText.textContent = 'Record Custom Shortcut';
+    }
+    window.removeEventListener('keydown', handleShortcutRecordingKeydown, true);
+    window.removeEventListener('keyup', handleShortcutRecordingKeyup, true);
+  }
+
+  if (webRecordShortcutBtn) {
+    webRecordShortcutBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (isRecordingShortcut) {
+        stopRecordingShortcut();
+      } else {
+        startRecordingShortcut();
+      }
+    });
+  }
+
+  if (webResetShortcutBtn) {
+    webResetShortcutBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      useCustomShortcut = false;
+      customShortcutObj = null;
+      updateShortcutUI();
+      showToast("Shortcut reset to default.");
+    });
+  }
+
+  if (hotkeyModifiersSelect) hotkeyModifiersSelect.addEventListener('change', updateShortcutUI);
+  if (hotkeyTriggerKeySelect) hotkeyTriggerKeySelect.addEventListener('change', updateShortcutUI);
+  if (hotkeyModeSelect) hotkeyModeSelect.addEventListener('change', updateShortcutUI);
 
   // Settings Live Updates (re-formats existing transcript box text in real time)
   function reformatActiveText() {
@@ -697,7 +896,9 @@
       showHud: showHudToggle.checked,
       hotkeyModifiers: hotkeyModifiersSelect ? hotkeyModifiersSelect.value : 'controlOption',
       hotkeyTriggerKey: hotkeyTriggerKeySelect ? hotkeyTriggerKeySelect.value : 'Space',
-      hotkeyMode: hotkeyModeSelect ? hotkeyModeSelect.value : 'hold'
+      hotkeyMode: hotkeyModeSelect ? hotkeyModeSelect.value : 'hold',
+      useCustomShortcut: useCustomShortcut,
+      customShortcutObj: customShortcutObj
     };
     localStorage.setItem('whisp_web_settings', JSON.stringify(settings));
   }
@@ -717,6 +918,8 @@
         if (settings.hotkeyModifiers && hotkeyModifiersSelect) hotkeyModifiersSelect.value = settings.hotkeyModifiers;
         if (settings.hotkeyTriggerKey && hotkeyTriggerKeySelect) hotkeyTriggerKeySelect.value = settings.hotkeyTriggerKey;
         if (settings.hotkeyMode && hotkeyModeSelect) hotkeyModeSelect.value = settings.hotkeyMode;
+        if (settings.useCustomShortcut !== undefined) useCustomShortcut = settings.useCustomShortcut;
+        if (settings.customShortcutObj !== undefined) customShortcutObj = settings.customShortcutObj;
       }
     } catch (e) {
       console.warn("Failed to load local settings:", e);
@@ -822,6 +1025,6 @@
 
   // Load configuration and history on bootstrap
   loadLocalSettings();
-  updateShortcutAndMode();
+  updateShortcutUI();
   loadHistory();
 })();

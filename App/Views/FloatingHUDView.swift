@@ -6,15 +6,9 @@ struct FloatingHUDView: View {
     var body: some View {
         HStack(spacing: 16) {
             // Pulsing recording dot
-            ZStack {
-                Circle()
-                    .fill(Color.red.opacity(0.2))
-                    .frame(width: 22, height: 22)
-                
-                Circle()
-                    .fill(Color.red)
-                    .frame(width: 10, height: 10)
-            }
+            // Responsive voice level visualizer bar
+            MiniWaveVisualizerView(store: store)
+                .frame(width: 24, height: 22)
             
             VStack(alignment: .leading, spacing: 3) {
                 Text("Whisp is listening...")
@@ -25,6 +19,7 @@ struct FloatingHUDView: View {
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white)
                     .lineLimit(2)
+                    .truncationMode(.head)
                     .multilineTextAlignment(.leading)
                     .frame(minWidth: 200, maxWidth: 450, alignment: .leading)
             }
@@ -59,3 +54,38 @@ struct FloatingHUDView: View {
         .shadow(color: Color.black.opacity(0.4), radius: 12, x: 0, y: 8)
     }
 }
+
+struct MiniWaveVisualizerView: View {
+    @ObservedObject var store: DictationStore
+    @State private var phase: CGFloat = 0
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(0..<5) { index in
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(
+                        LinearGradient(
+                            colors: [.red, .orange, .yellow],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .frame(width: 3, height: getHeight(for: index))
+            }
+        }
+        .onAppear {
+            withAnimation(.linear(duration: 1.0).repeatForever(autoreverses: false)) {
+                phase = .pi * 2
+            }
+        }
+    }
+
+    private func getHeight(for index: Int) -> CGFloat {
+        let base = sin(phase + CGFloat(index) * 1.0)
+        let normalized = (base + 1.0) / 2.0
+        let level = CGFloat(store.audioLevel)
+        let factor = 4 + level * 16 + normalized * (3 + level * 6)
+        return min(22, max(4, factor))
+    }
+}
+
