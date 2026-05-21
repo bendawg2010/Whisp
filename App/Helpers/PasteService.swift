@@ -15,12 +15,6 @@ enum PasteService {
 
     /// Reactivate the user's app and paste the clipboard contents.
     static func pasteToFrontApp() {
-        guard AXIsProcessTrusted() else {
-            // Accessibility not granted — open the pane so the user can fix it
-            openAccessibilitySettings()
-            return
-        }
-
         // Reactivate the previous app so the paste goes there
         if let app = previousApp {
             app.activate()
