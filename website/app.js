@@ -74,6 +74,7 @@
   const prefixInput = document.getElementById('webPrefix');
   const suffixInput = document.getElementById('webSuffix');
   const autoCopyToggle = document.getElementById('webAutoCopy');
+  const smartCleanupToggle = document.getElementById('webSmartCleanup');
   const showHudToggle = document.getElementById('webShowHUD');
   const hotkeyModifiersSelect = document.getElementById('webHotkeyModifiers');
   const hotkeyTriggerKeySelect = document.getElementById('webHotkeyTriggerKey');
@@ -184,6 +185,11 @@
     let cleaned = text.replace(/\s+/g, ' ').trim();
     if (!cleaned) return '';
 
+    if (smartCleanupToggle && smartCleanupToggle.checked) {
+      cleaned = removeFillerWords(cleaned);
+      if (!cleaned) return '';
+    }
+
     switch (transformation) {
       case 'raw':
         break;
@@ -221,6 +227,32 @@
     if (prefix) cleaned = prefix + cleaned;
     if (suffix) cleaned = cleaned + suffix;
 
+    return cleaned;
+  }
+
+  function removeFillerWords(text) {
+    const pattern = /\b(um|uh|ah|er|eh|hm|umm|uhh|ahh)\b/gi;
+    let cleaned = text.replace(pattern, '');
+    
+    // Clean up punctuation and spaces
+    cleaned = cleaned.replace(/,\s*,/g, ',');
+    cleaned = cleaned.replace(/,\s*([.!?])/g, '$1');
+    cleaned = cleaned.replace(/\s+,/g, ',');
+    cleaned = cleaned.replace(/\s+/g, ' ');
+    cleaned = cleaned.trim();
+    
+    if (cleaned.startsWith(',')) {
+      cleaned = cleaned.slice(1).trim();
+    }
+    if (cleaned.endsWith(',')) {
+      cleaned = cleaned.slice(0, -1).trim();
+    }
+    
+    const trimmedPunct = cleaned.replace(/[.,?! ]/g, '');
+    if (!trimmedPunct) {
+      return '';
+    }
+    
     return cleaned;
   }
 
@@ -646,6 +678,10 @@
   suffixInput.addEventListener('input', reformatActiveText);
   langSelect.addEventListener('change', saveLocalSettings);
   autoCopyToggle.addEventListener('change', saveLocalSettings);
+  if (smartCleanupToggle) smartCleanupToggle.addEventListener('change', () => {
+    saveLocalSettings();
+    reformatActiveText();
+  });
   showHudToggle.addEventListener('change', saveLocalSettings);
 
   // === 3. LOCAL SETTINGS PERSISTENCE ===
@@ -657,6 +693,7 @@
       prefix: prefixInput.value,
       suffix: suffixInput.value,
       autoCopy: autoCopyToggle.checked,
+      smartCleanup: smartCleanupToggle ? smartCleanupToggle.checked : true,
       showHud: showHudToggle.checked,
       hotkeyModifiers: hotkeyModifiersSelect ? hotkeyModifiersSelect.value : 'controlOption',
       hotkeyTriggerKey: hotkeyTriggerKeySelect ? hotkeyTriggerKeySelect.value : 'Space',
@@ -675,6 +712,7 @@
         if (settings.prefix) prefixInput.value = settings.prefix;
         if (settings.suffix) suffixInput.value = settings.suffix;
         if (settings.autoCopy !== undefined) autoCopyToggle.checked = settings.autoCopy;
+        if (settings.smartCleanup !== undefined && smartCleanupToggle) smartCleanupToggle.checked = settings.smartCleanup;
         if (settings.showHud !== undefined) showHudToggle.checked = settings.showHud;
         if (settings.hotkeyModifiers && hotkeyModifiersSelect) hotkeyModifiersSelect.value = settings.hotkeyModifiers;
         if (settings.hotkeyTriggerKey && hotkeyTriggerKeySelect) hotkeyTriggerKeySelect.value = settings.hotkeyTriggerKey;

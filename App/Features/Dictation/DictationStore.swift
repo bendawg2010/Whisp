@@ -456,6 +456,11 @@ final class DictationStore: ObservableObject {
 
         guard !cleaned.isEmpty else { return cleaned }
 
+        if smartCleanup {
+            cleaned = removeFillerWords(cleaned)
+            guard !cleaned.isEmpty else { return "" }
+        }
+
         switch textTransformation {
         case .raw:
             break
@@ -489,6 +494,37 @@ final class DictationStore: ObservableObject {
             cleaned = cleaned + customSuffix
         }
 
+        return cleaned
+    }
+
+    private func removeFillerWords(_ text: String) -> String {
+        let pattern = "\\b(um|uh|ah|er|eh|hm|umm|uhh|ahh)\\b"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
+            return text
+        }
+        
+        let range = NSRange(text.startIndex..., in: text)
+        var cleaned = regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: "")
+        
+        // Clean up punctuation and spaces
+        cleaned = cleaned.replacingOccurrences(of: ",\\s*,", with: ",", options: .regularExpression)
+        cleaned = cleaned.replacingOccurrences(of: ",\\s*([\\.\\?\\!])", with: "$1", options: .regularExpression)
+        cleaned = cleaned.replacingOccurrences(of: "\\s+,", with: ",")
+        cleaned = cleaned.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+        cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if cleaned.hasPrefix(",") {
+            cleaned = String(cleaned.dropFirst()).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if cleaned.hasSuffix(",") {
+            cleaned = String(cleaned.dropLast()).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        
+        let trimmedPunctuation = cleaned.trimmingCharacters(in: CharacterSet(charactersIn: ".,?! "))
+        if trimmedPunctuation.isEmpty {
+            return ""
+        }
+        
         return cleaned
     }
 

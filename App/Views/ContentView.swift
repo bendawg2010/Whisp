@@ -200,6 +200,7 @@ struct ContentView: View {
 
             Toggle("Auto-paste after dictation", isOn: $store.autoPaste)
             Toggle("Copy transcript to clipboard", isOn: $store.copyToClipboard)
+            Toggle("Smart Formatting (remove 'um', 'uh', etc.)", isOn: $store.smartCleanup)
             Toggle("Show floating HUD overlay", isOn: $store.showFloatingHUD)
             Toggle("Launch at login", isOn: $store.launchAtLogin)
         }
