@@ -31,7 +31,7 @@ if [[ -x "$SIGN_UPDATE" ]]; then
 fi
 
 PUB_DATE="$(LC_TIME=en_US.UTF-8 date -u +"%a, %d %b %Y %H:%M:%S +0000")"
-DOWNLOAD_URL="https://github.com/bendawg2010/Whisp/releases/download/v${VERSION}/Whisp.dmg"
+DOWNLOAD_URL="https://whisp-buz.pages.dev/Whisp.dmg"
 ENCLOSURE_ATTRS="url=\"${DOWNLOAD_URL}\" sparkle:version=\"${BUILD_NUMBER}\" sparkle:shortVersionString=\"${VERSION}\" length=\"${DMG_SIZE}\" type=\"application/octet-stream\""
 if [[ -n "$ED_SIGNATURE" ]]; then
   ENCLOSURE_ATTRS+=" sparkle:edSignature=\"${ED_SIGNATURE}\""
@@ -50,11 +50,15 @@ EOF
 )
 
 TMP_APPCAST="$(mktemp -t whisp-appcast)"
-awk -v item="$NEW_ITEM" '
-  /<\/channel>/ && !done { print item; done=1 }
+export NEW_ITEM
+awk '
+  /<\/channel>/ && !done { print ENVIRON["NEW_ITEM"]; done=1 }
   { print }
 ' "$ROOT/website/appcast.xml" > "$TMP_APPCAST"
 mv "$TMP_APPCAST" "$ROOT/website/appcast.xml"
+
+cp "$DMG_PATH" "$ROOT/website/Whisp.dmg"
+echo "Copied newly built DMG to website directory: website/Whisp.dmg"
 
 if command -v gh >/dev/null 2>&1; then
   gh release create "v${VERSION}" "$DMG_PATH" \

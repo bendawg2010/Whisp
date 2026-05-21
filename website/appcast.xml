@@ -15,5 +15,13 @@
       <description><![CDATA[<ul><li><strong>Initial release.</strong> Native macOS menubar dictation with Control Option Space, live transcription, clipboard copy, and auto-paste.</li><li><strong>Gravy-ready shipping.</strong> Includes MIT licensing, Sparkle update plumbing, and the download-gated Cloudflare Pages site.</li></ul>]]></description>
       <enclosure url="https://whisp-buz.pages.dev/Whisp.dmg" sparkle:version="100" sparkle:shortVersionString="1.0.0" length="1119770" type="application/octet-stream" sparkle:edSignature="H9jhnkPgaiQcYSJdcFNB+bHKGex8uIMuJFZti0VlZBCTDG2okcHh1GIFCc9g2GYmsuWxFjOmqcDJjbwytjV2CA==" />
     </item>
+    <item>
+      <title>Version 1.1.0</title>
+      <pubDate>Thu, 21 May 2026 18:33:00 +0000</pubDate>
+      <sparkle:version>110</sparkle:version>
+      <sparkle:shortVersionString>1.1.0</sparkle:shortVersionString>
+      <description><![CDATA[<ul><li>Added custom shortcut recording and voice level visualizer.</li><li>Auto-scrolling transcript HUD.</li><li>Fixed settings window opening.</li></ul>]]></description>
+      <enclosure url="https://whisp-buz.pages.dev/Whisp.dmg" sparkle:version="110" sparkle:shortVersionString="1.1.0" length="1208592" type="application/octet-stream" sparkle:edSignature="2nld4J3baIZJzxngps1KDCnFIJRWVvVMT1duXcwV60M89MnPi7WtarRvehOlM+LaY+cXT8oW2hFSJJEwAZdqBw==" />
+    </item>
   </channel>
 </rss>
