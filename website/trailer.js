@@ -57,7 +57,10 @@
       hud.classList.remove('show');
       hud.classList.remove('success');
     }
-    if (hudText) hudText.textContent = "Start speaking...";
+    if (hudText) {
+      hudText.textContent = "Start speaking...";
+      hudText.scrollLeft = 0;
+    }
     if (hudEqualizer) {
       hudEqualizer.classList.remove('active');
       const miniBars = hudEqualizer.querySelectorAll('.sim-mini-bar');
@@ -94,8 +97,8 @@
 
     switch (state) {
       case "idle":
-        // Wait 1.5 seconds, then show the hotkey shortcut overlay being pressed
-        state = "hotkey1";
+        // Wait 1.5 seconds, then show the hotkey shortcut overlay and press it (hold)
+        state = "hotkey_press";
         timerId = setTimeout(() => {
           if (!isPlaying) return;
           if (keypress) {
@@ -107,12 +110,11 @@
         }, 1500);
         break;
 
-      case "hotkey1":
-        // Wait 0.6 seconds, trigger recording start, hide hotkey indicator
+      case "hotkey_press":
+        // Wait 0.6 seconds, trigger recording start, but KEEP the keypress indicator shown and pressed
         state = "recording";
         timerId = setTimeout(() => {
           if (!isPlaying) return;
-          if (keypress) keypress.classList.remove('show', 'pressed');
           if (menuIcon) menuIcon.classList.add('active');
           if (hud) hud.classList.add('show');
           if (hudEqualizer) hudEqualizer.classList.add('active');
@@ -128,36 +130,31 @@
             if (!isPlaying) return;
             if (wordIdx < words.length) {
               activeText += (wordIdx === 0 ? "" : " ") + words[wordIdx];
-              if (hudText) hudText.textContent = activeText;
+              if (hudText) {
+                hudText.textContent = activeText;
+                hudText.scrollLeft = hudText.scrollWidth;
+              }
               wordIdx++;
             } else {
               clearInterval(wordTimerId);
-              // Done speaking, trigger hotkey trigger to stop
-              state = "hotkey2";
+              // Done speaking, release the hotkey and transition directly to pasting
+              state = "pasting";
               runSequence();
             }
           }, 350); // Speed of spoken words typing
         }, 700);
         break;
 
-      case "hotkey2":
-        // Wait 0.5s, flash hotkey overlay again to stop recording
-        timerId = setTimeout(() => {
-          if (!isPlaying) return;
-          if (keypress) {
-            keypress.classList.add('show');
-            setTimeout(() => { keypress.classList.add('pressed'); }, 150);
-          }
-          state = "pasting";
-          runSequence();
-        }, 500);
-        break;
-
       case "pasting":
+        // Release/hide keypress indicator immediately
+        if (keypress) {
+          keypress.classList.remove('pressed');
+          setTimeout(() => { keypress.classList.remove('show'); }, 150);
+        }
+
         // Wait 0.6s, show success HUD state ("Pasted!"), stop wave visualizers, slide HUD down, paste into editor
         timerId = setTimeout(() => {
           if (!isPlaying) return;
-          if (keypress) keypress.classList.remove('show', 'pressed');
           if (menuIcon) menuIcon.classList.remove('active');
           if (hudEqualizer) {
             hudEqualizer.classList.remove('active');

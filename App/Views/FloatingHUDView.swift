@@ -30,7 +30,7 @@ struct FloatingHUDView: View {
             }
             
             // Modifier key tip
-            Text(store.hotkeyModifiers.shortDescription)
+            Text(store.hotkeyDescription)
                 .font(.system(size: 10, weight: .black))
                 .padding(.horizontal, 6)
                 .padding(.vertical, 3)

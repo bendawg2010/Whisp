@@ -22,9 +22,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         registerHotkey()
 
-        store.hotkeyModifiersChanged
-            .sink { [weak self] combo in
-                self?.registerHotkey(modifiers: combo.carbonModifiers)
+        store.hotkeyChanged
+            .sink { [weak self] in
+                self?.registerHotkey()
             }
             .store(in: &cancellables)
 
@@ -62,10 +62,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func registerHotkey(modifiers: UInt32? = nil) {
-        let mods = modifiers ?? store.hotkeyModifiers.carbonModifiers
-        hotKey.register(modifiers: mods) { [weak self] in
-            self?.store.toggleRecording()
+    private func registerHotkey() {
+        let mods = store.hotkeyModifiers.carbonModifiers
+        let code = store.hotkeyTriggerKey.keyCode
+        hotKey.register(modifiers: mods, keyCode: code) { [weak self] isPressed in
+            guard let self = self else { return }
+            if isPressed {
+                self.store.isHotkeyCurrentlyPressed = true
+                if self.store.hotkeyMode == .hold {
+                    self.store.startRecording()
+                } else {
+                    self.store.toggleRecording()
+                }
+            } else {
+                self.store.hotkeyReleased()
+                if self.store.hotkeyMode == .hold {
+                    self.store.stopRecording()
+                }
+            }
         }
     }
 

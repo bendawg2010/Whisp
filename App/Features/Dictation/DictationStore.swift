@@ -35,8 +35,6 @@ enum HotkeyModifiersCombo: String, CaseIterable, Identifiable, Codable {
     var id: String { self.rawValue }
 
     var carbonModifiers: UInt32 {
-        // Need to import Carbon.HIToolbox to resolve these constants
-        // cmdKey = 0x0100, shiftKey = 0x0200, optionKey = 0x0800, controlKey = 0x1000
         switch self {
         case .controlOption:
             return UInt32(0x1000 | 0x0800) // controlKey | optionKey
@@ -49,14 +47,57 @@ enum HotkeyModifiersCombo: String, CaseIterable, Identifiable, Codable {
         }
     }
     
-    var shortDescription: String {
+    var shortModifierDescription: String {
         switch self {
-        case .controlOption: return "⌃⌥Space"
-        case .controlCommand: return "⌃⌘Space"
-        case .optionCommand: return "⌥⌘Space"
-        case .controlShift: return "⌃⇧Space"
+        case .controlOption: return "⌃⌥"
+        case .controlCommand: return "⌃⌘"
+        case .optionCommand: return "⌥⌘"
+        case .controlShift: return "⌃⇧"
         }
     }
+}
+
+enum HotkeyTriggerKey: String, CaseIterable, Identifiable, Codable {
+    case space = "Space"
+    case returnKey = "Return"
+    case tab = "Tab"
+    case escape = "Escape"
+    case d = "D"
+    case r = "R"
+    case grave = "Grave Accent (`)"
+
+    var id: String { self.rawValue }
+
+    var keyCode: UInt32 {
+        switch self {
+        case .space: return 49
+        case .returnKey: return 36
+        case .tab: return 48
+        case .escape: return 53
+        case .d: return 2
+        case .r: return 15
+        case .grave: return 50
+        }
+    }
+
+    var shortDescription: String {
+        switch self {
+        case .space: return "Space"
+        case .returnKey: return "↩"
+        case .tab: return "⇥"
+        case .escape: return "⎋"
+        case .d: return "D"
+        case .r: return "R"
+        case .grave: return "`"
+        }
+    }
+}
+
+enum HotkeyMode: String, CaseIterable, Identifiable, Codable {
+    case hold = "Hold to Speak"
+    case toggle = "Press to Start/Stop"
+
+    var id: String { self.rawValue }
 }
 
 struct DictationLocale: Identifiable, Hashable {
@@ -109,14 +150,30 @@ final class DictationStore: ObservableObject {
     @Published var hotkeyModifiers: HotkeyModifiersCombo {
         didSet {
             defaults.set(hotkeyModifiers.rawValue, forKey: Keys.hotkeyModifiers)
-            hotkeyModifiersChanged.send(hotkeyModifiers)
+            hotkeyChanged.send()
+        }
+    }
+    @Published var hotkeyTriggerKey: HotkeyTriggerKey {
+        didSet {
+            defaults.set(hotkeyTriggerKey.rawValue, forKey: Keys.hotkeyTriggerKey)
+            hotkeyChanged.send()
+        }
+    }
+    @Published var hotkeyMode: HotkeyMode {
+        didSet {
+            defaults.set(hotkeyMode.rawValue, forKey: Keys.hotkeyMode)
+            hotkeyChanged.send()
         }
     }
     @Published var showFloatingHUD: Bool {
         didSet { defaults.set(showFloatingHUD, forKey: Keys.showFloatingHUD) }
     }
 
-    let hotkeyModifiersChanged = PassthroughSubject<HotkeyModifiersCombo, Never>()
+    let hotkeyChanged = PassthroughSubject<Void, Never>()
+
+    var hotkeyDescription: String {
+        return hotkeyModifiers.shortModifierDescription + hotkeyTriggerKey.shortDescription
+    }
 
     var permissionSummary: String {
         if speechPermission != .authorized {
@@ -138,6 +195,8 @@ final class DictationStore: ObservableObject {
         static let customPrefix = "Whisp.customPrefix"
         static let customSuffix = "Whisp.customSuffix"
         static let hotkeyModifiers = "Whisp.hotkeyModifiers"
+        static let hotkeyTriggerKey = "Whisp.hotkeyTriggerKey"
+        static let hotkeyMode = "Whisp.hotkeyMode"
         static let showFloatingHUD = "Whisp.showFloatingHUD"
     }
 
@@ -147,6 +206,8 @@ final class DictationStore: ObservableObject {
     private var recognitionTask: SFSpeechRecognitionTask?
     private var recordingStartedAt: Date?
     private var finishWorkItem: DispatchWorkItem?
+    var isHotkeyCurrentlyPressed = false
+    private var pendingPasteText: String?
 
     init() {
         autoPaste = defaults.object(forKey: Keys.autoPaste) as? Bool ?? true
@@ -159,8 +220,16 @@ final class DictationStore: ObservableObject {
         textTransformation = TextTransformation(rawValue: transformationRaw) ?? .standard
         customPrefix = defaults.string(forKey: Keys.customPrefix) ?? ""
         customSuffix = defaults.string(forKey: Keys.customSuffix) ?? ""
+        
         let modifierRaw = defaults.string(forKey: Keys.hotkeyModifiers) ?? ""
         hotkeyModifiers = HotkeyModifiersCombo(rawValue: modifierRaw) ?? .controlOption
+        
+        let keyRaw = defaults.string(forKey: Keys.hotkeyTriggerKey) ?? ""
+        hotkeyTriggerKey = HotkeyTriggerKey(rawValue: keyRaw) ?? .space
+        
+        let modeRaw = defaults.string(forKey: Keys.hotkeyMode) ?? ""
+        hotkeyMode = HotkeyMode(rawValue: modeRaw) ?? .hold
+        
         showFloatingHUD = defaults.object(forKey: Keys.showFloatingHUD) as? Bool ?? true
     }
 
@@ -196,6 +265,7 @@ final class DictationStore: ObservableObject {
     func startRecording() {
         errorMessage = nil
         finishWorkItem?.cancel()
+        pendingPasteText = nil
 
         speechPermission = SFSpeechRecognizer.authorizationStatus()
         micPermission = AVCaptureDevice.authorizationStatus(for: .audio)
@@ -282,6 +352,7 @@ final class DictationStore: ObservableObject {
 
     func cancelRecording() {
         finishWorkItem?.cancel()
+        pendingPasteText = nil
         audioEngine?.stop()
         audioEngine?.inputNode.removeTap(onBus: 0)
         recognitionRequest?.endAudio()
@@ -292,6 +363,19 @@ final class DictationStore: ObservableObject {
         isRecording = false
         isFinishing = false
         liveTranscript = ""
+    }
+
+    func hotkeyReleased() {
+        isHotkeyCurrentlyPressed = false
+        if let pending = pendingPasteText {
+            pendingPasteText = nil
+            if autoPaste {
+                let delay = pending.count > 500 ? 0.65 : (pending.count > 100 ? 0.4 : 0.18)
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                    PasteService.paste()
+                }
+            }
+        }
     }
 
     func copyLastTranscript() {
@@ -354,8 +438,13 @@ final class DictationStore: ObservableObject {
         }
 
         if autoPaste {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
-                PasteService.paste()
+            if hotkeyMode == .hold && isHotkeyCurrentlyPressed {
+                pendingPasteText = cleaned
+            } else {
+                let delay = cleaned.count > 500 ? 0.65 : (cleaned.count > 100 ? 0.4 : 0.18)
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                    PasteService.paste()
+                }
             }
         }
     }

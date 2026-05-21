@@ -75,6 +75,9 @@
   const suffixInput = document.getElementById('webSuffix');
   const autoCopyToggle = document.getElementById('webAutoCopy');
   const showHudToggle = document.getElementById('webShowHUD');
+  const hotkeyModifiersSelect = document.getElementById('webHotkeyModifiers');
+  const hotkeyTriggerKeySelect = document.getElementById('webHotkeyTriggerKey');
+  const hotkeyModeSelect = document.getElementById('webHotkeyMode');
   
   // Buttons
   const recordBtn = document.getElementById('webRecordBtn');
@@ -313,6 +316,7 @@
     // Render text to UI
     transcriptText.textContent = finalFormattedText || "Speak now...";
     webHudText.textContent = finalFormattedText || "Start speaking...";
+    webHudText.scrollLeft = webHudText.scrollWidth;
   }
 
   // Simulated Speech-to-Text Fallback
@@ -493,17 +497,137 @@
     showToast("Pasted! (On macOS, Whisp drops text directly into your active window)");
   });
 
-  // Hotkey Bind: Ctrl + Alt + Space (equivalent to ⌃⌥Space)
+  let isHotkeyHeld = false;
+
+  function matchesShortcut(e) {
+    if (!hotkeyModifiersSelect || !hotkeyTriggerKeySelect) return false;
+    const mods = hotkeyModifiersSelect.value;
+    const keyVal = hotkeyTriggerKeySelect.value;
+
+    let modsMatch = false;
+    if (mods === 'controlOption') {
+      modsMatch = e.ctrlKey && e.altKey && !e.metaKey && !e.shiftKey;
+    } else if (mods === 'controlCommand') {
+      modsMatch = e.ctrlKey && e.metaKey && !e.altKey && !e.shiftKey;
+    } else if (mods === 'optionCommand') {
+      modsMatch = e.altKey && e.metaKey && !e.ctrlKey && !e.shiftKey;
+    } else if (mods === 'controlShift') {
+      modsMatch = e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey;
+    }
+
+    if (!modsMatch) return false;
+
+    let keyMatch = false;
+    if (keyVal === 'Space') {
+      keyMatch = e.code === 'Space' || e.key === ' ';
+    } else if (keyVal === 'Return') {
+      keyMatch = e.key === 'Enter';
+    } else if (keyVal === 'Tab') {
+      keyMatch = e.key === 'Tab';
+    } else if (keyVal === 'Escape') {
+      keyMatch = e.key === 'Escape';
+    } else if (keyVal === 'D') {
+      keyMatch = e.key.toLowerCase() === 'd';
+    } else if (keyVal === 'R') {
+      keyMatch = e.key.toLowerCase() === 'r';
+    } else if (keyVal === 'Grave Accent (`)') {
+      keyMatch = e.key === '`' || e.code === 'Backquote';
+    }
+
+    return keyMatch;
+  }
+
   document.addEventListener('keydown', (e) => {
-    // Avoid triggering when user is editing settings text inputs
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') {
       return;
     }
-    if (e.ctrlKey && e.altKey && e.code === 'Space') {
+    if (matchesShortcut(e)) {
       e.preventDefault();
-      toggleRecord();
+      
+      const mode = hotkeyModeSelect ? hotkeyModeSelect.value : 'hold';
+      if (mode === 'hold') {
+        if (!isHotkeyHeld) {
+          isHotkeyHeld = true;
+          if (!isRecording) {
+            startRecording();
+          }
+        }
+      } else {
+        toggleRecord();
+      }
     }
   });
+
+  document.addEventListener('keyup', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') {
+      return;
+    }
+    if (!hotkeyTriggerKeySelect) return;
+    const keyVal = hotkeyTriggerKeySelect.value;
+    let keyMatch = false;
+    if (keyVal === 'Space') {
+      keyMatch = e.code === 'Space' || e.key === ' ';
+    } else if (keyVal === 'Return') {
+      keyMatch = e.key === 'Enter';
+    } else if (keyVal === 'Tab') {
+      keyMatch = e.key === 'Tab';
+    } else if (keyVal === 'Escape') {
+      keyMatch = e.key === 'Escape';
+    } else if (keyVal === 'D') {
+      keyMatch = e.key.toLowerCase() === 'd';
+    } else if (keyVal === 'R') {
+      keyMatch = e.key.toLowerCase() === 'r';
+    } else if (keyVal === 'Grave Accent (`)') {
+      keyMatch = e.key === '`' || e.code === 'Backquote';
+    }
+
+    if (keyMatch) {
+      isHotkeyHeld = false;
+      const mode = hotkeyModeSelect ? hotkeyModeSelect.value : 'hold';
+      if (mode === 'hold' && isRecording) {
+        finalizeDictation();
+      }
+    }
+  });
+
+  function updateShortcutAndMode() {
+    if (!hotkeyModifiersSelect || !hotkeyTriggerKeySelect || !hotkeyModeSelect) return;
+    const mods = hotkeyModifiersSelect.value;
+    const keyVal = hotkeyTriggerKeySelect.value;
+    const mode = hotkeyModeSelect.value;
+
+    let modDesc = '⌃⌥';
+    if (mods === 'controlOption') modDesc = '⌃⌥';
+    else if (mods === 'controlCommand') modDesc = '⌃⌘';
+    else if (mods === 'optionCommand') modDesc = '⌥⌘';
+    else if (mods === 'controlShift') modDesc = '⌃⇧';
+
+    let keyDesc = 'Space';
+    if (keyVal === 'Space') keyDesc = 'Space';
+    else if (keyVal === 'Return') keyDesc = '↩';
+    else if (keyVal === 'Tab') keyDesc = '⇥';
+    else if (keyVal === 'Escape') keyDesc = '⎋';
+    else if (keyVal === 'D') keyDesc = 'D';
+    else if (keyVal === 'R') keyDesc = 'R';
+    else if (keyVal === 'Grave Accent (`)') keyDesc = '`';
+
+    const shortcutText = modDesc + keyDesc;
+    if (shortcutLabel) shortcutLabel.textContent = shortcutText;
+
+    if (!isRecording && (!finalFormattedText || transcriptText.textContent.startsWith("Press the button below or hit") || transcriptText.textContent.startsWith("Hold"))) {
+      if (mode === 'hold') {
+        transcriptText.textContent = `Hold ${shortcutText} to try Whisp right here in your browser.`;
+      } else {
+        transcriptText.textContent = `Press the button below or hit ${shortcutText} to try Whisp right here in your browser.`;
+      }
+    }
+    
+    saveLocalSettings();
+  }
+
+  if (hotkeyModifiersSelect) hotkeyModifiersSelect.addEventListener('change', updateShortcutAndMode);
+  if (hotkeyTriggerKeySelect) hotkeyTriggerKeySelect.addEventListener('change', updateShortcutAndMode);
+  if (hotkeyModeSelect) hotkeyModeSelect.addEventListener('change', updateShortcutAndMode);
 
   // Settings Live Updates (re-formats existing transcript box text in real time)
   function reformatActiveText() {
@@ -533,7 +657,10 @@
       prefix: prefixInput.value,
       suffix: suffixInput.value,
       autoCopy: autoCopyToggle.checked,
-      showHud: showHudToggle.checked
+      showHud: showHudToggle.checked,
+      hotkeyModifiers: hotkeyModifiersSelect ? hotkeyModifiersSelect.value : 'controlOption',
+      hotkeyTriggerKey: hotkeyTriggerKeySelect ? hotkeyTriggerKeySelect.value : 'Space',
+      hotkeyMode: hotkeyModeSelect ? hotkeyModeSelect.value : 'hold'
     };
     localStorage.setItem('whisp_web_settings', JSON.stringify(settings));
   }
@@ -549,6 +676,9 @@
         if (settings.suffix) suffixInput.value = settings.suffix;
         if (settings.autoCopy !== undefined) autoCopyToggle.checked = settings.autoCopy;
         if (settings.showHud !== undefined) showHudToggle.checked = settings.showHud;
+        if (settings.hotkeyModifiers && hotkeyModifiersSelect) hotkeyModifiersSelect.value = settings.hotkeyModifiers;
+        if (settings.hotkeyTriggerKey && hotkeyTriggerKeySelect) hotkeyTriggerKeySelect.value = settings.hotkeyTriggerKey;
+        if (settings.hotkeyMode && hotkeyModeSelect) hotkeyModeSelect.value = settings.hotkeyMode;
       }
     } catch (e) {
       console.warn("Failed to load local settings:", e);
@@ -654,5 +784,6 @@
 
   // Load configuration and history on bootstrap
   loadLocalSettings();
+  updateShortcutAndMode();
   loadHistory();
 })();

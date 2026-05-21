@@ -50,7 +50,7 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text("Whisp")
                     .font(.system(size: 26, weight: .black, design: .rounded))
-                Text(store.isRecording ? "Listening... press \(store.hotkeyModifiers.shortDescription) to stop" : "\(store.hotkeyModifiers.shortDescription) to dictate")
+                Text(store.isRecording ? (store.hotkeyMode == .hold ? "Listening... release \(store.hotkeyDescription) to stop" : "Listening... press \(store.hotkeyDescription) to stop") : (store.hotkeyMode == .hold ? "Hold \(store.hotkeyDescription) to dictate" : "Press \(store.hotkeyDescription) to dictate"))
                     .font(.callout)
                     .foregroundStyle(.white.opacity(0.68))
             }
@@ -162,6 +162,20 @@ struct ContentView: View {
             }
             .pickerStyle(.menu)
 
+            Picker("Shortcut Key", selection: $store.hotkeyTriggerKey) {
+                ForEach(HotkeyTriggerKey.allCases) { key in
+                    Text(key.rawValue).tag(key)
+                }
+            }
+            .pickerStyle(.menu)
+
+            Picker("Recording Mode", selection: $store.hotkeyMode) {
+                ForEach(HotkeyMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
+            }
+            .pickerStyle(.menu)
+
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
                     Text("Prefix:")
@@ -265,7 +279,7 @@ struct ContentView: View {
         if store.isRecording || store.isFinishing {
             return store.liveTranscript.isEmpty ? "Start talking..." : store.liveTranscript
         }
-        return store.lastTranscript.isEmpty ? "Press Dictate or \(store.hotkeyModifiers.shortDescription)." : store.lastTranscript
+        return store.lastTranscript.isEmpty ? (store.hotkeyMode == .hold ? "Hold \(store.hotkeyDescription) to dictate." : "Press \(store.hotkeyDescription) to dictate.") : store.lastTranscript
     }
 }
 

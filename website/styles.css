@@ -995,7 +995,6 @@ footer {
   color: white;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .web-hud-shortcut {
@@ -1785,7 +1784,6 @@ footer {
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   margin-top: 1px;
 }
 
