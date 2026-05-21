@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Whisp - fast Mac dictation</title>
+    <meta name="description" content="Whisp is a free, MIT-licensed macOS menubar app for fast voice-to-text.">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-nav">
+      <a class="brand" href="/">
+        <span class="brand-mark">W</span>
+        <span>Whisp</span>
+      </a>
+      <nav>
+        <a href="https://github.com/bendawg2010/Whisp" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/sponsors/bendawg2010" target="_blank" rel="noopener">Sponsor</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Free Mac dictation &middot; MIT licensed</p>
+          <h1 class="hero-title">
+            <span class="grad-text">Whisp</span><br>
+            talk anywhere, paste everywhere.
+          </h1>
+          <p class="hero-lead">
+            A tiny menubar voice-to-text app for macOS. Hit Control Option Space,
+            speak naturally, and Whisp drops clean text wherever you were working.
+          </p>
+          <div class="hero-actions">
+            <a class="btn primary" href="/Whisp.dmg" data-download-trigger>Download for Mac</a>
+            <a class="btn ghost" href="https://github.com/bendawg2010/Whisp" target="_blank" rel="noopener">View source</a>
+          </div>
+        </div>
+
+        <div class="app-preview" aria-label="Whisp app preview">
+          <div class="preview-top">
+            <span class="status-dot"></span>
+            <span>Whisp is listening</span>
+            <kbd>control</kbd><kbd>option</kbd><kbd>space</kbd>
+          </div>
+          <div class="wave">
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <div class="transcript">
+            <p>Turn the meeting notes into a short action list and send it to the team.</p>
+          </div>
+          <div class="preview-actions">
+            <button>Copied</button>
+            <button>Pasted</button>
+            <button>Saved</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="feature-grid">
+        <article>
+          <span>01</span>
+          <h2>Hold one shortcut</h2>
+          <p>Start and stop dictation from any app with Control Option Space.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h2>Clean text lands fast</h2>
+          <p>Whisp trims spacing, adds punctuation, copies, and can auto-paste.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h2>Native Mac stack</h2>
+          <p>SwiftUI, macOS Speech, Sparkle updates, and no cloud account required.</p>
+        </article>
+      </section>
+    </main>
+
+    <div id="dlGate" class="dl-gate" hidden role="dialog" aria-modal="true">
+      <div class="dl-gate-card">
+        <button class="dl-gate-close" id="dlGateClose" aria-label="Close">x</button>
+        <div class="dl-gate-icon">!</div>
+        <h2 class="dl-gate-title">Before you download</h2>
+        <p class="dl-gate-lead">
+          <strong>Free + open source &middot; MIT licensed.</strong>
+          macOS will say "can't be opened" the first time because Apple charges
+          <strong>$99/year</strong> for a Developer ID and this project is free.
+        </p>
+        <ol>
+          <li>Drag <strong>Whisp.app</strong> to Applications.</li>
+          <li>Open it once, macOS pops "can't be opened", then hit Done.</li>
+          <li>Open <strong>System Settings -&gt; Privacy &amp; Security</strong>.</li>
+          <li>Scroll down, choose <strong>Open Anyway</strong>.</li>
+          <li>Reopen Whisp, confirm <strong>Open</strong>, and you are done.</li>
+        </ol>
+        <p class="dl-gate-note">You only do this once. Future updates open normally.</p>
+        <a id="dlGateConfirm" class="btn primary dl-gate-btn" href="" data-locked="true">
+          <span class="dl-gate-btn-text">Read above first...</span>
+        </a>
+        <div class="dl-gate-tip-row">
+          <a href="https://cash.app/$Dryeetsolutions" target="_blank" rel="noopener" class="cashapp-pill">Tip $1</a>
+          <a href="https://github.com/bendawg2010/Whisp" target="_blank" rel="noopener">Star on GitHub</a>
+          <a href="https://github.com/sponsors/bendawg2010" target="_blank" rel="noopener">Sponsor</a>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <div>&copy; Whisp &middot; MIT licensed &middot; <a href="https://github.com/bendawg2010/Whisp" target="_blank" rel="noopener">open source</a></div>
+      <div class="footer-tip">
+        <a href="https://cash.app/$Dryeetsolutions" target="_blank" rel="noopener" class="cashapp">Tip $1 on Cash App</a>
+        <a href="https://github.com/sponsors/bendawg2010" target="_blank" rel="noopener">Sponsor</a>
+      </div>
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>

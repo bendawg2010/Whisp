@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0"
+  xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"
+  xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Whisp Updates</title>
+    <link>https://whisp-buz.pages.dev/</link>
+    <description>Whisp appcast feed</description>
+    <language>en</language>
+    <item>
+      <title>Version 1.0.0</title>
+      <pubDate>Thu, 21 May 2026 15:32:43 +0000</pubDate>
+      <sparkle:version>100</sparkle:version>
+      <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
+      <description><![CDATA[<ul><li><strong>Initial release.</strong> Native macOS menubar dictation with Control Option Space, live transcription, clipboard copy, and auto-paste.</li><li><strong>Gravy-ready shipping.</strong> Includes MIT licensing, Sparkle update plumbing, and the download-gated Cloudflare Pages site.</li></ul>]]></description>
+      <enclosure url="https://whisp-buz.pages.dev/Whisp.dmg" sparkle:version="100" sparkle:shortVersionString="1.0.0" length="1121687" type="application/octet-stream" sparkle:edSignature="HBxnIi6wWo4sHUujsS6KZSXzG+xgiawn7z5xcCL4dkfVDcoPpOQJETmgFbOs50mN/IHcA3N5ETEWIDT62i7PBQ==" />
+    </item>
+  </channel>
+</rss>
