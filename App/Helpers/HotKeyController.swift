@@ -6,7 +6,7 @@ final class HotKeyController {
     private var eventHandler: EventHandlerRef?
     private var callback: (() -> Void)?
 
-    func register(callback: @escaping () -> Void) {
+    func register(modifiers: UInt32 = UInt32(controlKey | optionKey), callback: @escaping () -> Void) {
         unregister()
         self.callback = callback
 
@@ -51,7 +51,7 @@ final class HotKeyController {
         let hotKeyID = EventHotKeyID(signature: OSType(0x57687370), id: 1)
         RegisterEventHotKey(
             UInt32(kVK_Space),
-            UInt32(controlKey | optionKey),
+            modifiers,
             hotKeyID,
             GetApplicationEventTarget(),
             0,

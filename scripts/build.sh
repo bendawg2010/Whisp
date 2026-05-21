@@ -25,6 +25,21 @@ xcodebuild \
   build
 
 APP_PATH="$ROOT/build/DerivedData/Build/Products/Release/Whisp.app"
+
+echo "Ad-hoc signing Whisp.app and embedded Sparkle code..."
+SPARKLE_FRAMEWORK="$APP_PATH/Contents/Frameworks/Sparkle.framework"
+if [[ -d "$SPARKLE_FRAMEWORK" ]]; then
+  codesign --force --sign - --timestamp=none "$SPARKLE_FRAMEWORK/Versions/B/XPCServices/Downloader.xpc"
+  codesign --force --sign - --timestamp=none "$SPARKLE_FRAMEWORK/Versions/B/XPCServices/Installer.xpc"
+  codesign --force --sign - --timestamp=none "$SPARKLE_FRAMEWORK/Versions/B/Updater.app"
+  codesign --force --sign - --timestamp=none "$SPARKLE_FRAMEWORK"
+fi
+
+codesign --force --sign - --timestamp=none \
+  --entitlements "$ROOT/App/Whisp.entitlements" \
+  "$APP_PATH"
+
+codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+
 echo ""
 echo "Built: $APP_PATH"
-

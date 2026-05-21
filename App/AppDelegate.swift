@@ -11,6 +11,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var cancellables = Set<AnyCancellable>()
 
+    private var hudWindow: NSPanel?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         configurePopover()
@@ -18,9 +20,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         wireStatusUpdates()
         store.requestPermissions()
 
-        hotKey.register { [weak self] in
-            self?.store.toggleRecording()
-        }
+        registerHotkey()
+
+        store.hotkeyModifiersChanged
+            .sink { [weak self] combo in
+                self?.registerHotkey(modifiers: combo.carbonModifiers)
+            }
+            .store(in: &cancellables)
 
         updater.clearSkippedVersionsOnLaunch()
         _ = updater.controller
@@ -56,18 +62,77 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    private func registerHotkey(modifiers: UInt32? = nil) {
+        let mods = modifiers ?? store.hotkeyModifiers.carbonModifiers
+        hotKey.register(modifiers: mods) { [weak self] in
+            self?.store.toggleRecording()
+        }
+    }
+
     private func wireStatusUpdates() {
         store.$isRecording
             .receive(on: DispatchQueue.main)
             .sink { [weak self] isRecording in
-                guard let button = self?.statusItem?.button else { return }
-                button.image = NSImage(
-                    systemSymbolName: isRecording ? "waveform.circle.fill" : "waveform.circle",
-                    accessibilityDescription: isRecording ? "Whisp recording" : "Whisp"
-                )
-                button.contentTintColor = isRecording ? .systemRed : nil
+                guard let self = self else { return }
+                
+                if let button = self.statusItem?.button {
+                    button.image = NSImage(
+                        systemSymbolName: isRecording ? "waveform.circle.fill" : "waveform.circle",
+                        accessibilityDescription: isRecording ? "Whisp recording" : "Whisp"
+                    )
+                    button.contentTintColor = isRecording ? .systemRed : nil
+                }
+
+                if isRecording {
+                    self.showHUD()
+                } else {
+                    self.hideHUD()
+                }
             }
             .store(in: &cancellables)
+    }
+
+    private func showHUD() {
+        guard store.showFloatingHUD else { return }
+        
+        if hudWindow == nil {
+            let panel = NSPanel(
+                contentRect: NSRect(x: 0, y: 0, width: 420, height: 56),
+                styleMask: [.borderless, .nonactivatingPanel],
+                backing: .buffered,
+                defer: false
+            )
+            panel.isFloatingPanel = true
+            panel.level = .statusBar
+            panel.backgroundColor = .clear
+            panel.isOpaque = false
+            panel.hasShadow = false
+            panel.ignoresMouseEvents = true
+            
+            let hostingView = NSHostingView(rootView: FloatingHUDView(store: store))
+            panel.contentView = hostingView
+            
+            self.hudWindow = panel
+        }
+        
+        positionHUD()
+        hudWindow?.orderFrontRegardless()
+    }
+
+    private func hideHUD() {
+        hudWindow?.orderOut(nil)
+    }
+
+    private func positionHUD() {
+        guard let panel = hudWindow, let screen = NSScreen.main else { return }
+        
+        let screenRect = screen.visibleFrame
+        let panelSize = panel.frame.size
+        
+        let x = screenRect.origin.x + (screenRect.size.width - panelSize.width) / 2
+        let y = screenRect.origin.y + 42
+        
+        panel.setFrameOrigin(NSPoint(x: x, y: y))
     }
 
     @objc private func togglePopover(_ sender: Any?) {

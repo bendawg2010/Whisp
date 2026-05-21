@@ -9,11 +9,11 @@
     <language>en</language>
     <item>
       <title>Version 1.0.0</title>
-      <pubDate>Thu, 21 May 2026 15:32:43 +0000</pubDate>
+      <pubDate>Thu, 21 May 2026 15:37:40 +0000</pubDate>
       <sparkle:version>100</sparkle:version>
       <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
       <description><![CDATA[<ul><li><strong>Initial release.</strong> Native macOS menubar dictation with Control Option Space, live transcription, clipboard copy, and auto-paste.</li><li><strong>Gravy-ready shipping.</strong> Includes MIT licensing, Sparkle update plumbing, and the download-gated Cloudflare Pages site.</li></ul>]]></description>
-      <enclosure url="https://whisp-buz.pages.dev/Whisp.dmg" sparkle:version="100" sparkle:shortVersionString="1.0.0" length="1121687" type="application/octet-stream" sparkle:edSignature="HBxnIi6wWo4sHUujsS6KZSXzG+xgiawn7z5xcCL4dkfVDcoPpOQJETmgFbOs50mN/IHcA3N5ETEWIDT62i7PBQ==" />
+      <enclosure url="https://whisp-buz.pages.dev/Whisp.dmg" sparkle:version="100" sparkle:shortVersionString="1.0.0" length="1119770" type="application/octet-stream" sparkle:edSignature="H9jhnkPgaiQcYSJdcFNB+bHKGex8uIMuJFZti0VlZBCTDG2okcHh1GIFCc9g2GYmsuWxFjOmqcDJjbwytjV2CA==" />
     </item>
   </channel>
 </rss>

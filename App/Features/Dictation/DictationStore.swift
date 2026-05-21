@@ -15,6 +15,50 @@ struct DictationHistoryItem: Identifiable, Codable, Equatable {
     }
 }
 
+enum TextTransformation: String, CaseIterable, Identifiable, Codable {
+    case standard = "Standard"
+    case raw = "Raw"
+    case bulletList = "Bullet List"
+    case titleCase = "Title Case"
+    case upperCase = "UPPERCASE"
+    case snakeCase = "snake_case"
+
+    var id: String { self.rawValue }
+}
+
+enum HotkeyModifiersCombo: String, CaseIterable, Identifiable, Codable {
+    case controlOption = "Control + Option"
+    case controlCommand = "Control + Command"
+    case optionCommand = "Option + Command"
+    case controlShift = "Control + Shift"
+
+    var id: String { self.rawValue }
+
+    var carbonModifiers: UInt32 {
+        // Need to import Carbon.HIToolbox to resolve these constants
+        // cmdKey = 0x0100, shiftKey = 0x0200, optionKey = 0x0800, controlKey = 0x1000
+        switch self {
+        case .controlOption:
+            return UInt32(0x1000 | 0x0800) // controlKey | optionKey
+        case .controlCommand:
+            return UInt32(0x1000 | 0x0100) // controlKey | cmdKey
+        case .optionCommand:
+            return UInt32(0x0800 | 0x0100) // optionKey | cmdKey
+        case .controlShift:
+            return UInt32(0x1000 | 0x0200) // controlKey | shiftKey
+        }
+    }
+    
+    var shortDescription: String {
+        switch self {
+        case .controlOption: return "⌃⌥Space"
+        case .controlCommand: return "⌃⌘Space"
+        case .optionCommand: return "⌥⌘Space"
+        case .controlShift: return "⌃⇧Space"
+        }
+    }
+}
+
 struct DictationLocale: Identifiable, Hashable {
     let id: String
     let name: String
@@ -53,6 +97,26 @@ final class DictationStore: ObservableObject {
     @Published var launchAtLogin: Bool = LaunchAtLogin.isEnabled {
         didSet { LaunchAtLogin.setEnabled(launchAtLogin) }
     }
+    @Published var textTransformation: TextTransformation {
+        didSet { defaults.set(textTransformation.rawValue, forKey: Keys.textTransformation) }
+    }
+    @Published var customPrefix: String {
+        didSet { defaults.set(customPrefix, forKey: Keys.customPrefix) }
+    }
+    @Published var customSuffix: String {
+        didSet { defaults.set(customSuffix, forKey: Keys.customSuffix) }
+    }
+    @Published var hotkeyModifiers: HotkeyModifiersCombo {
+        didSet {
+            defaults.set(hotkeyModifiers.rawValue, forKey: Keys.hotkeyModifiers)
+            hotkeyModifiersChanged.send(hotkeyModifiers)
+        }
+    }
+    @Published var showFloatingHUD: Bool {
+        didSet { defaults.set(showFloatingHUD, forKey: Keys.showFloatingHUD) }
+    }
+
+    let hotkeyModifiersChanged = PassthroughSubject<HotkeyModifiersCombo, Never>()
 
     var permissionSummary: String {
         if speechPermission != .authorized {
@@ -70,6 +134,11 @@ final class DictationStore: ObservableObject {
         static let smartCleanup = "Whisp.smartCleanup"
         static let locale = "Whisp.locale"
         static let history = "Whisp.history"
+        static let textTransformation = "Whisp.textTransformation"
+        static let customPrefix = "Whisp.customPrefix"
+        static let customSuffix = "Whisp.customSuffix"
+        static let hotkeyModifiers = "Whisp.hotkeyModifiers"
+        static let showFloatingHUD = "Whisp.showFloatingHUD"
     }
 
     private let defaults = UserDefaults.standard
@@ -85,6 +154,14 @@ final class DictationStore: ObservableObject {
         smartCleanup = defaults.object(forKey: Keys.smartCleanup) as? Bool ?? true
         selectedLocaleIdentifier = defaults.string(forKey: Keys.locale) ?? "en-US"
         history = Self.loadHistory(from: defaults)
+
+        let transformationRaw = defaults.string(forKey: Keys.textTransformation) ?? ""
+        textTransformation = TextTransformation(rawValue: transformationRaw) ?? .standard
+        customPrefix = defaults.string(forKey: Keys.customPrefix) ?? ""
+        customSuffix = defaults.string(forKey: Keys.customSuffix) ?? ""
+        let modifierRaw = defaults.string(forKey: Keys.hotkeyModifiers) ?? ""
+        hotkeyModifiers = HotkeyModifiersCombo(rawValue: modifierRaw) ?? .controlOption
+        showFloatingHUD = defaults.object(forKey: Keys.showFloatingHUD) as? Bool ?? true
     }
 
     func requestPermissions() {
@@ -288,14 +365,41 @@ final class DictationStore: ObservableObject {
             .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
-        guard smartCleanup, !cleaned.isEmpty else { return cleaned }
+        guard !cleaned.isEmpty else { return cleaned }
 
-        let first = cleaned.prefix(1).uppercased()
-        cleaned = first + cleaned.dropFirst()
-
-        if let last = cleaned.last, !".!?".contains(last) {
-            cleaned += "."
+        switch textTransformation {
+        case .raw:
+            break
+        case .standard:
+            let first = cleaned.prefix(1).uppercased()
+            cleaned = first + cleaned.dropFirst()
+            if let last = cleaned.last, !".!?".contains(last) {
+                cleaned += "."
+            }
+        case .bulletList:
+            // Split by sentence delimiters but keep them or handle splitting cleanly
+            let sentences = cleaned.components(separatedBy: CharacterSet(charactersIn: ".!?"))
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            cleaned = sentences.map { "- \($0)" }.joined(separator: "\n")
+        case .titleCase:
+            cleaned = cleaned.capitalized
+        case .upperCase:
+            cleaned = cleaned.uppercased()
+        case .snakeCase:
+            cleaned = cleaned.lowercased()
+                .replacingOccurrences(of: "[^a-z0-9]+", with: "_", options: .regularExpression)
+                .trimmingCharacters(in: CharacterSet(charactersIn: "_"))
         }
+
+        if !customPrefix.isEmpty {
+            cleaned = customPrefix + cleaned
+        }
+
+        if !customSuffix.isEmpty {
+            cleaned = cleaned + customSuffix
+        }
+
         return cleaned
     }
 

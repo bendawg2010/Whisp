@@ -38,15 +38,19 @@ struct ContentView: View {
                 Circle()
                     .fill(statusColor.opacity(0.16))
                     .frame(width: 48, height: 48)
-                Image(systemName: store.isRecording ? "waveform.circle.fill" : "waveform.circle")
-                    .font(.system(size: 29, weight: .semibold))
-                    .foregroundStyle(statusColor)
+                if store.isRecording {
+                    WaveVisualizerView()
+                } else {
+                    Image(systemName: "waveform.circle")
+                        .font(.system(size: 29, weight: .semibold))
+                        .foregroundStyle(statusColor)
+                }
             }
 
             VStack(alignment: .leading, spacing: 3) {
                 Text("Whisp")
                     .font(.system(size: 26, weight: .black, design: .rounded))
-                Text(store.isRecording ? "Listening... press Control Option Space to stop" : "Control Option Space to dictate")
+                Text(store.isRecording ? "Listening... press \(store.hotkeyModifiers.shortDescription) to stop" : "\(store.hotkeyModifiers.shortDescription) to dictate")
                     .font(.callout)
                     .foregroundStyle(.white.opacity(0.68))
             }
@@ -101,12 +105,23 @@ struct ContentView: View {
             }
 
             ScrollView {
-                Text(transcriptText)
-                    .font(.system(size: 15, weight: .medium, design: .rounded))
-                    .foregroundStyle(transcriptText.isEmpty ? .white.opacity(0.35) : .white.opacity(0.92))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .textSelection(.enabled)
-                    .padding(12)
+                VStack(alignment: .leading, spacing: 8) {
+                    if store.isRecording && store.liveTranscript.isEmpty {
+                        HStack(spacing: 8) {
+                            WaveVisualizerView()
+                            Text("Start talking...")
+                                .font(.system(size: 15, weight: .medium, design: .rounded))
+                                .foregroundStyle(.white.opacity(0.45))
+                        }
+                    } else {
+                        Text(transcriptText)
+                            .font(.system(size: 15, weight: .medium, design: .rounded))
+                            .foregroundStyle(transcriptText.isEmpty ? .white.opacity(0.35) : .white.opacity(0.92))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .textSelection(.enabled)
+                    }
+                }
+                .padding(12)
             }
             .frame(height: 132)
             .background(Color.white.opacity(0.08))
@@ -125,7 +140,7 @@ struct ContentView: View {
     }
 
     private var settings: some View {
-        VStack(spacing: 10) {
+        VStack(alignment: .leading, spacing: 10) {
             Picker("Language", selection: $store.selectedLocaleIdentifier) {
                 ForEach(DictationStore.locales) { locale in
                     Text(locale.name).tag(locale.id)
@@ -133,9 +148,45 @@ struct ContentView: View {
             }
             .pickerStyle(.menu)
 
+            Picker("Text Style", selection: $store.textTransformation) {
+                ForEach(TextTransformation.allCases) { style in
+                    Text(style.rawValue).tag(style)
+                }
+            }
+            .pickerStyle(.menu)
+
+            Picker("Shortcut Modifiers", selection: $store.hotkeyModifiers) {
+                ForEach(HotkeyModifiersCombo.allCases) { combo in
+                    Text(combo.rawValue).tag(combo)
+                }
+            }
+            .pickerStyle(.menu)
+
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
+                    Text("Prefix:")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.55))
+                        .frame(width: 44, alignment: .leading)
+                    TextField("Prepended text", text: $store.customPrefix)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(size: 11))
+                }
+                HStack(spacing: 8) {
+                    Text("Suffix:")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.55))
+                        .frame(width: 44, alignment: .leading)
+                    TextField("Appended text", text: $store.customSuffix)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(size: 11))
+                }
+            }
+            .padding(.vertical, 4)
+
             Toggle("Auto-paste after dictation", isOn: $store.autoPaste)
             Toggle("Copy transcript to clipboard", isOn: $store.copyToClipboard)
-            Toggle("Smart cleanup", isOn: $store.smartCleanup)
+            Toggle("Show floating HUD overlay", isOn: $store.showFloatingHUD)
             Toggle("Launch at login", isOn: $store.launchAtLogin)
         }
         .toggleStyle(.switch)
@@ -214,7 +265,38 @@ struct ContentView: View {
         if store.isRecording || store.isFinishing {
             return store.liveTranscript.isEmpty ? "Start talking..." : store.liveTranscript
         }
-        return store.lastTranscript.isEmpty ? "Press Dictate or Control Option Space." : store.lastTranscript
+        return store.lastTranscript.isEmpty ? "Press Dictate or \(store.hotkeyModifiers.shortDescription)." : store.lastTranscript
+    }
+}
+
+struct WaveVisualizerView: View {
+    @State private var phase: CGFloat = 0
+
+    var body: some View {
+        HStack(spacing: 3) {
+            ForEach(0..<8) { index in
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(
+                        LinearGradient(
+                            colors: [.red, .orange, .yellow],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .frame(width: 4, height: getHeight(for: index))
+            }
+        }
+        .onAppear {
+            withAnimation(.linear(duration: 1.2).repeatForever(autoreverses: false)) {
+                phase = .pi * 2
+            }
+        }
+    }
+
+    private func getHeight(for index: Int) -> CGFloat {
+        let base = sin(phase + CGFloat(index) * 0.8)
+        let normalized = (base + 1.0) / 2.0 // 0 to 1
+        return 8 + normalized * 18
     }
 }
 

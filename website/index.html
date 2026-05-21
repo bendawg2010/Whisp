@@ -8,6 +8,11 @@
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
+    <!-- Glowing background mesh gradient orbs -->
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="glow-orb orb-3"></div>
+
     <header class="site-nav">
       <a class="brand" href="/">
         <span class="brand-mark">W</span>
@@ -15,6 +20,7 @@
       </a>
       <nav>
         <a href="https://github.com/bendawg2010/Whisp" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://cash.app/$Dryeetsolutions" target="_blank" rel="noopener">Donate</a>
         <a href="https://github.com/sponsors/bendawg2010" target="_blank" rel="noopener">Sponsor</a>
       </nav>
     </header>
@@ -37,23 +43,261 @@
           </div>
         </div>
 
+        <div class="macbook-wrapper">
+          <!-- Play / Pause control overlay -->
+          <div class="sim-controls-top">
+            <button id="simPlayPause" class="btn-sim-control">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align: middle; margin-right: 6px;">
+                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+              </svg>
+              Pause Simulation
+            </button>
+          </div>
+
+          <div class="macbook-container">
+            <!-- MacBook Screen Display -->
+            <div class="macbook-screen">
+              <div class="macbook-screen-bezel">
+                <div class="macbook-camera"></div>
+                <div class="macbook-display">
+                  
+                  <!-- macOS Wallpaper & Desktop -->
+                  <div class="mac-desktop">
+                    <div class="wallpaper-blob blob-1"></div>
+                    <div class="wallpaper-blob blob-2"></div>
+                    <div class="wallpaper-blob blob-3"></div>
+                    
+                    <!-- macOS Menu Bar -->
+                    <div class="mac-menu-bar">
+                      <div class="menu-bar-left">
+                        <span class="apple-logo"></span>
+                        <span class="menu-item active-app">Notes</span>
+                        <span class="menu-item">File</span>
+                        <span class="menu-item">Edit</span>
+                        <span class="menu-item">Format</span>
+                      </div>
+                      <div class="menu-bar-right">
+                        <!-- Whisp Status Item Icon in Menu Bar -->
+                        <span id="simMenuIcon" class="sim-menu-icon" title="Whisp App Status">
+                          <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+                          </svg>
+                        </span>
+                        <span class="menu-icon-sys">📶</span>
+                        <span class="menu-icon-sys">🔋</span>
+                        <span class="menu-time">12:00 PM</span>
+                      </div>
+                    </div>
+
+                    <!-- Apple Notes App Mock Window (3-Column Layout) -->
+                    <div class="notes-app-window">
+                      <div class="notes-titlebar">
+                        <div class="notes-window-controls">
+                          <span class="note-control close"></span>
+                          <span class="note-control minimize"></span>
+                          <span class="note-control expand"></span>
+                        </div>
+                        <div class="notes-toolbar">
+                          <span class="toolbar-btn">📁</span>
+                          <span class="toolbar-btn">☰</span>
+                          <span class="toolbar-btn">☑</span>
+                          <div class="notes-search-bar">🔍 Search</div>
+                        </div>
+                      </div>
+                      <div class="notes-content">
+                        <!-- Col 1: Folders -->
+                        <div class="notes-sidebar">
+                          <div class="sidebar-header">iCloud</div>
+                          <div class="sidebar-item active">
+                            <span class="item-icon">📝</span> Notes
+                          </div>
+                          <div class="sidebar-item">
+                            <span class="item-icon">📁</span> Templates
+                          </div>
+                          <div class="sidebar-item">
+                            <span class="item-icon">🗑️</span> Deleted
+                          </div>
+                        </div>
+                        <!-- Col 2: Notes List -->
+                        <div class="notes-list-pane">
+                          <div class="list-item active">
+                            <div class="list-item-title">Whisp Launch</div>
+                            <div class="list-item-meta">
+                              <span class="list-item-time">12:00 PM</span>
+                              <span class="list-item-preview">Drafting the launch announcement...</span>
+                            </div>
+                          </div>
+                          <div class="list-item">
+                            <div class="list-item-title">Feature Ideas</div>
+                            <div class="list-item-meta">
+                              <span class="list-item-time">Yesterday</span>
+                              <span class="list-item-preview">Support multiple custom formats...</span>
+                            </div>
+                          </div>
+                          <div class="list-item">
+                            <div class="list-item-title">Meeting Notes</div>
+                            <div class="list-item-meta">
+                              <span class="list-item-time">Monday</span>
+                              <span class="list-item-preview">Review performance metrics and deploy...</span>
+                            </div>
+                          </div>
+                        </div>
+                        <!-- Col 3: Editor -->
+                        <div class="notes-editor">
+                          <div class="notes-date-header">May 21, 2026 at 12:00 PM</div>
+                          <div id="simNotesBody" class="notes-body">
+                            <span class="sim-cursor"></span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Simulated Translucent Floating HUD Overlay -->
+                    <div id="simHud" class="sim-hud">
+                      <div class="sim-hud-mini-equalizer" id="simHudEqualizer">
+                        <span class="sim-mini-bar"></span>
+                        <span class="sim-mini-bar"></span>
+                        <span class="sim-mini-bar"></span>
+                        <span class="sim-mini-bar"></span>
+                      </div>
+                      <div class="sim-hud-copy">
+                        <div class="sim-hud-title">Whisp is listening...</div>
+                        <div class="sim-hud-text" id="simHudText">Start speaking...</div>
+                      </div>
+                      <div class="sim-hud-shortcut">⌃⌥Space</div>
+                    </div>
+
+                    <!-- Keyboard Keypress Indicator Overlay -->
+                    <div id="simKeypress" class="sim-keypress-badge">⌃⌥Space</div>
+
+                  </div>
+                </div>
+                <div class="macbook-bezel-logo"></div>
+              </div>
+            </div>
+            
+            <!-- MacBook Lower Body (Hinge & Trackpad) -->
+            <div class="macbook-body-chassis">
+              <div class="macbook-keyboard-recess"></div>
+              <div class="macbook-trackpad"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Interactive Web Playground Demo Section -->
+      <section class="demo-section">
+        <div class="demo-header">
+          <h2>Try Whisp in Your Browser</h2>
+          <p>Experience real-time voice-to-text dictation, automatic formatting, custom prefixes/suffixes, and our floating HUD right here.</p>
+        </div>
+
         <div class="app-preview" aria-label="Whisp app preview">
+          <!-- macOS Window Titlebar Controls -->
+          <div class="mac-window-titlebar">
+            <div class="mac-controls">
+              <span class="control close"></span>
+              <span class="control minimize"></span>
+              <span class="control expand"></span>
+            </div>
+            <div class="mac-title">Whisp.app</div>
+          </div>
+          
+          <!-- Mockup Header / Info -->
           <div class="preview-top">
-            <span class="status-dot"></span>
-            <span>Whisp is listening</span>
-            <kbd>control</kbd><kbd>option</kbd><kbd>space</kbd>
+            <div class="status-group">
+              <span id="webStatusDot" class="status-dot inactive"></span>
+              <span id="webStatusText">Click Record to talk</span>
+            </div>
+            <div class="shortcut-indicator">
+              <kbd id="webShortcutLabel">⌃⌥Space</kbd>
+            </div>
           </div>
-          <div class="wave">
-            <span></span><span></span><span></span><span></span><span></span>
-            <span></span><span></span><span></span><span></span>
+          
+          <!-- Animated Audio Visualizer Wave -->
+          <div class="wave-container" id="webWaveContainer">
+            <div class="wave" id="webWave">
+              <span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span>
+              <span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span>
+              <span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span>
+            </div>
           </div>
-          <div class="transcript">
-            <p>Turn the meeting notes into a short action list and send it to the team.</p>
+
+          <!-- Dynamic Live Transcript Box -->
+          <div class="transcript" id="webTranscriptBox">
+            <p id="webTranscriptText">Press the button below or hit ⌃⌥Space to try Whisp right here in your browser.</p>
           </div>
-          <div class="preview-actions">
-            <button>Copied</button>
-            <button>Pasted</button>
-            <button>Saved</button>
+
+          <!-- Mini Settings / Customizability directly in the mockup -->
+          <div class="preview-settings">
+            <div class="settings-row">
+              <div class="settings-col">
+                <label for="webLanguage">Language</label>
+                <select id="webLanguage">
+                  <option value="en-US">English (US)</option>
+                  <option value="en-GB">English (UK)</option>
+                  <option value="es-ES">Spanish (ES)</option>
+                  <option value="fr-FR">French</option>
+                  <option value="it-IT">Italian</option>
+                  <option value="de-DE">German</option>
+                </select>
+              </div>
+              <div class="settings-col">
+                <label for="webTextStyle">Text Style</label>
+                <select id="webTextStyle">
+                  <option value="standard">Standard</option>
+                  <option value="raw">Raw</option>
+                  <option value="bulletList">Bullet List</option>
+                  <option value="titleCase">Title Case</option>
+                  <option value="upperCase">UPPERCASE</option>
+                  <option value="snakeCase">snake_case</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="settings-row text-inputs">
+              <div class="settings-col">
+                <label for="webPrefix">Prefix</label>
+                <input type="text" id="webPrefix" placeholder="None" />
+              </div>
+              <div class="settings-col">
+                <label for="webSuffix">Suffix</label>
+                <input type="text" id="webSuffix" placeholder="None" />
+              </div>
+            </div>
+
+            <div class="settings-row checkboxes">
+              <label class="toggle-switch">
+                <input type="checkbox" id="webAutoCopy" checked>
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">Auto-copy</span>
+              </label>
+              <label class="toggle-switch">
+                <input type="checkbox" id="webShowHUD" checked>
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">Show HUD</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Bottom Actions and Trigger -->
+          <div class="preview-controls-row">
+            <button class="btn-mock btn-record" id="webRecordBtn">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+              </svg>
+              <span id="webRecordBtnText">Record</span>
+            </button>
+            <div class="action-btn-group">
+              <button class="btn-mock secondary" id="webCopyBtn" disabled>Copy</button>
+              <button class="btn-mock secondary" id="webPasteBtn" disabled>Paste</button>
+            </div>
+          </div>
+
+          <!-- Local Web Recent History -->
+          <div class="web-history" id="webHistoryContainer" hidden>
+            <h3>Recent Web Dictations</h3>
+            <div class="web-history-list" id="webHistoryList"></div>
           </div>
         </div>
       </section>
@@ -114,6 +358,22 @@
       </div>
     </footer>
 
+    <!-- Floating HUD Showcase on Website -->
+    <div id="webHud" class="web-hud" hidden>
+      <div class="web-hud-mini-equalizer" id="webHudEqualizer">
+        <span class="mini-bar"></span>
+        <span class="mini-bar"></span>
+        <span class="mini-bar"></span>
+        <span class="mini-bar"></span>
+      </div>
+      <div class="web-hud-copy">
+        <div class="web-hud-title">Whisp is listening...</div>
+        <div class="web-hud-text" id="webHudText">Start speaking...</div>
+      </div>
+      <div class="web-hud-shortcut">⌃⌥Space</div>
+    </div>
+
     <script src="app.js"></script>
+    <script src="trailer.js"></script>
   </body>
 </html>
