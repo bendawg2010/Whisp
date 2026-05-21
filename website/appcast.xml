@@ -23,5 +23,13 @@
       <description><![CDATA[<ul><li>Added custom shortcut recording and voice level visualizer.</li><li>Auto-scrolling transcript HUD.</li><li>Fixed settings window opening.</li></ul>]]></description>
       <enclosure url="https://whisp-buz.pages.dev/Whisp.dmg" sparkle:version="110" sparkle:shortVersionString="1.1.0" length="1208592" type="application/octet-stream" sparkle:edSignature="2nld4J3baIZJzxngps1KDCnFIJRWVvVMT1duXcwV60M89MnPi7WtarRvehOlM+LaY+cXT8oW2hFSJJEwAZdqBw==" />
     </item>
+    <item>
+      <title>Version 1.2.0</title>
+      <pubDate>Thu, 21 May 2026 18:40:20 +0000</pubDate>
+      <sparkle:version>120</sparkle:version>
+      <sparkle:shortVersionString>1.2.0</sparkle:shortVersionString>
+      <description><![CDATA[<ul><li><strong>Fixed auto-paste:</strong> Whisp now remembers the app you were in and re-activates it before pasting, so text always lands at your cursor.</li><li>Added Accessibility permission check — opens System Settings if not granted.</li></ul>]]></description>
+      <enclosure url="https://whisp-buz.pages.dev/Whisp.dmg" sparkle:version="120" sparkle:shortVersionString="1.2.0" length="1210872" type="application/octet-stream" sparkle:edSignature="/lcIWDNA3HsMcYYfmUTvCCyDj6JV8YPkwo9lYkYVf6eSOFhoBRP+fEudD/uKIxiGnGyG6kFIgJ8WRSWJ2tpBDQ==" />
+    </item>
   </channel>
 </rss>

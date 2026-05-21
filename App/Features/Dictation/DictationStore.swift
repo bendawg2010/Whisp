@@ -387,6 +387,10 @@ final class DictationStore: ObservableObject {
         recognitionRequest = request
         liveTranscript = ""
         recordingStartedAt = Date()
+
+        // Snapshot the frontmost app BEFORE we flip isRecording (which may show HUD/popover)
+        PasteService.saveFrontmostApp()
+
         isRecording = true
         isFinishing = false
 
@@ -434,9 +438,9 @@ final class DictationStore: ObservableObject {
         if let pending = pendingPasteText {
             pendingPasteText = nil
             if autoPaste {
-                let delay = 0.15
+                let delay = 0.3
                 DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                    PasteService.paste()
+                    PasteService.pasteToFrontApp()
                 }
             }
         }
@@ -506,9 +510,9 @@ final class DictationStore: ObservableObject {
             if hotkeyMode == .hold && isHotkeyCurrentlyPressed {
                 pendingPasteText = cleaned
             } else {
-                let delay = 0.15
+                let delay = 0.3
                 DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                    PasteService.paste()
+                    PasteService.pasteToFrontApp()
                 }
             }
         }
